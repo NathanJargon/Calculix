@@ -1,97 +1,149 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Numex — Numerical Analysis Toolkit ⚡
 
-# Getting Started
+**Numex** is a high-performance, developer-grade mobile numerical analysis toolkit built with **bare React Native CLI (TypeScript)** without Expo dependencies. Inspired by modern developer-tool and IDE aesthetics, Numex provides precision root-finding and polynomial interpolation engines with detailed step-by-step mathematical diagnostics.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## 🚀 Key Modules
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+### 1. Root-Finding Engine
+Solves continuous scalar non-linear equations $f(x) = 0$ using 4 classical numerical algorithms:
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **Bisection Method ($\mathcal{O}(1)$ Linear)**:
+  - Robust bracketing method using the Intermediate Value Theorem.
+  - Guarantees convergence on $[a, b]$ when $f(a) \cdot f(b) < 0$.
+  - Outputs bracket interval $[a, b]$, midpoint $c_n$, $f(c_n)$, relative percentage error, and interval width.
+- **Newton-Raphson Method ($\mathcal{O}(2)$ Quadratic Rate)**:
+  - Open tangent-line iteration using analytical symbolic derivatives via `mathjs` (with automatic fallback to 4th-order central difference).
+  - Defensive singular derivative detection ($|f'(x)| \approx 0$).
+  - Outputs $x_n$, $f(x_n)$, $f'(x_n)$, $x_{n+1}$, and relative error.
+- **Secant Method ($\mathcal{O}(1.618)$ Superlinear Rate)**:
+  - Finite-difference quasi-Newton method eliminating the need for derivative evaluations.
+  - Defensive zero-slope denominator handling ($f(x_n) - f(x_{n-1}) = 0$).
+  - Outputs $x_{n-1}$, $x_n$, $f(x_n)$, $x_{n+1}$, and relative error.
+- **Fixed-Point Iteration (Contraction Mapping)**:
+  - Iterates $x_{n+1} = g(x_n)$ derived from $f(x) = 0$.
+  - Verifies local convergence according to the Banach fixed-point theorem.
+  - Outputs $x_n$, $g(x_n)$, $f(x_n)$, and relative error.
 
-```sh
-# Using npm
+### 2. Interpolation Engine
+Generates and evaluates high-precision polynomial curves from discrete coordinate datasets:
+
+- **Newton's Divided Difference Interpolation**:
+  - Full 2D divided difference pyramid/matrix calculation ($f[x_0], f[x_0, x_1], \dots$).
+  - Evaluates polynomial $P(x^*)$ at any arbitrary target $x^*$.
+  - Displays full divided difference table and step-by-step term breakdown (coefficients, factor products, and cumulative sums).
+  - Formats clean algebraic polynomial representation string $P(x)$.
+- **Lagrange Interpolation**:
+  - Constructs cardinal basis polynomials $L_i(x) = \prod_{j \neq i} \frac{x - x_j}{x_i - x_j}$.
+  - Computes evaluated basis weights $L_i(x^*)$ and weighted contributions $y_i \cdot L_i(x^*)$.
+  - Displays individual algebraic basis formulas and the full polynomial expression.
+
+---
+
+## 🎨 Design Philosophy
+
+- **Dark-Mode-First / Developer Aesthetics**: Built with an Obsidian/Slate carbon color palette (`#0B0F17`, `#131B26`, `#243042`).
+- **Precision Typography**: Monospace numbers and variables (`Menlo` / `monospace`) with clean label badges and hair-line border dividers.
+- **Status Telemetry**: Real-time convergence status chips (`CONVERGED`, `MAX_ITERATIONS`, `INVALID_BRACKET`, `DERIVATIVE_ZERO`, `DUPLICATE_X`).
+- **Zero Placeholder Bloat**: Fully interactive with built-in engineering presets (Kepler equations, thermodynamics steam tables, kinematic trajectories, transcendental functions).
+
+---
+
+## 📂 Project Architecture
+
+```
+Calculix/
+├── App.tsx                     # App entry point (SafeAreaProvider & StatusBar)
+├── index.js                    # React Native AppRegistry
+├── package.json                # Bare React Native CLI dependencies
+├── tsconfig.json               # TypeScript configuration
+├── jest.config.js              # Unit testing configuration
+├── .gitignore                  # Production Git ignore rules
+├── __tests__/                  # Unit test suites
+│   ├── rootFinding.test.ts     # Bisection, Newton, Secant, Fixed-Point tests
+│   ├── interpolation.test.ts   # Newton Divided Diff & Lagrange tests
+│   └── App.test.tsx            # App render test
+└── src/
+    ├── math/                   # Pure mathematical algorithms (no UI dependencies)
+    │   ├── evaluator.ts        # Math parser, symbolic/numerical derivatives, formatters
+    │   ├── rootFinding.ts      # Pure numerical root-finding solvers
+    │   └── interpolation.ts    # Divided difference & Lagrange basis solvers
+    ├── types/                  # Strict TypeScript definitions
+    │   ├── rootFinding.ts      # Iteration rows, input contracts, results
+    │   └── interpolation.ts    # Coordinate pairs, matrix, basis terms
+    ├── theme/                  # Design tokens
+    │   ├── colors.ts           # Obsidian/slate/emerald developer palette
+    │   └── typography.ts       # Monospace & sans typography scale
+    ├── components/
+    │   ├── common/             # Reusable UI components
+    │   │   ├── HeaderBar.tsx   # Top telemetry bar with engine status & info modal trigger
+    │   │   ├── TechButton.tsx  # Developer button primitives
+    │   │   ├── TechInput.tsx   # Monospace inputs with prefixes & validation
+    │   │   ├── StatusBadge.tsx # Convergence chips with glowing indicators
+    │   │   ├── MetricCard.tsx  # Precision stat boxes
+    │   │   ├── TabSelector.tsx # Segmented algorithm switchers
+    │   │   └── CodeBlock.tsx   # Syntax formula & polynomial viewer with copy
+    │   ├── rootFinding/        # Root-finding components
+    │   │   ├── RootInputForm.tsx    # Dynamic parameter form + presets
+    │   │   ├── RootResults.tsx      # Numerical root summary card
+    │   │   └── IterationTable.tsx   # Horizontally scrollable step-by-step matrix
+    │   └── interpolation/      # Interpolation components
+    │       ├── PointListEditor.tsx      # Dynamic coordinate pairs editor
+    │       ├── InterpolationResults.tsx # Evaluated y* and polynomial string
+    │       ├── DividedDiffTable.tsx     # Full divided difference matrix
+    │       └── LagrangeBasisTable.tsx   # Lagrange basis weights & formulas
+    ├── screens/
+    │   ├── RootFindingScreen.tsx    # Root-Finding workspace
+    │   ├── InterpolationScreen.tsx  # Interpolation workspace
+    │   └── TheoryGuideModal.tsx     # Numerical methods reference modal
+    └── navigation/
+        └── RootNavigator.tsx        # Bottom tab navigation
+```
+
+---
+
+## 🛠️ Getting Started
+
+### Prerequisites
+- Node.js >= 22.11.0
+- npm or yarn
+- Android Studio / Xcode configured for bare React Native CLI
+
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/<your-username>/numex.git
+cd numex
+
+# Install dependencies
+npm install
+```
+
+### Running Locally
+
+#### Android
+```bash
+# Launch Metro bundler
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# In a separate terminal, launch Android
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+#### iOS
+```bash
+cd ios && pod install && cd ..
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### Running Tests
+Execute the comprehensive test suite verifying all 4 root-finding methods and both interpolation algorithms:
+```bash
+npm test
+```
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+---
 
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## 📜 License
+MIT License. Built for precision numerical analysis.
