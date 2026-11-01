@@ -13,8 +13,7 @@ import { InterpolationResults } from '../components/interpolation/InterpolationR
 import { LagrangeBasisTable } from '../components/interpolation/LagrangeBasisTable';
 import { PointListEditor } from '../components/interpolation/PointListEditor';
 import { solveInterpolation } from '../math/interpolation';
-import { Colors } from '../theme/colors';
-import { Typography } from '../theme/typography';
+import { useTheme } from '../theme/ThemeContext';
 import {
   DataPoint,
   InterpolationInput,
@@ -23,15 +22,15 @@ import {
 } from '../types/interpolation';
 
 const INTERPOLATION_OPTIONS: TabOption<InterpolationMethodType>[] = [
-  { id: 'newton-divided', label: "NEWTON'S DIVIDED DIFF", badge: 'PYRAMID' },
-  { id: 'lagrange', label: 'LAGRANGE INTERPOLATION', badge: 'BASIS L_i' },
+  { id: 'newton-divided', label: 'Newton Divided Diff', badge: 'Table' },
+  { id: 'lagrange', label: 'Lagrange Method', badge: 'Weights' },
 ];
 
 const METHOD_DESCRIPTIONS: Record<InterpolationMethodType, string> = {
   'newton-divided':
-    "Builds a divided difference matrix pyramid. Efficient for computing interpolating polynomials with incremental point updates without re-evaluating preceding differences.",
+    'Builds a difference table to find a polynomial curve passing through all your points. Ideal for step-by-step examination.',
   lagrange:
-    "Constructs distinct cardinal basis polynomials L_i(x) for each coordinate pair (x_i, y_i). Guarantees P(x_i) = y_i through algebraic orthogonality.",
+    'Constructs weighted basis curves for each data point to create a smooth interpolating polynomial.',
 };
 
 const DEFAULT_POINTS: DataPoint[] = [
@@ -42,6 +41,8 @@ const DEFAULT_POINTS: DataPoint[] = [
 ];
 
 export const InterpolationScreen: React.FC = () => {
+  const { colors } = useTheme();
+
   const [method, setMethod] = useState<InterpolationMethodType>('newton-divided');
   const [points, setPoints] = useState<DataPoint[]>(DEFAULT_POINTS);
   const [targetX, setTargetX] = useState<number>(2.5);
@@ -81,7 +82,7 @@ export const InterpolationScreen: React.FC = () => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <ScrollView
         style={styles.scroll}
@@ -96,8 +97,8 @@ export const InterpolationScreen: React.FC = () => {
         />
 
         {/* Method Brief */}
-        <View style={styles.methodInfoBox}>
-          <Text style={[Typography.monoSm, styles.methodInfoText]}>
+        <View style={[styles.methodInfoBox, { backgroundColor: colors.accentLight, borderLeftColor: colors.accent }]}>
+          <Text style={[styles.methodInfoText, { color: colors.textSecondary }]}>
             {METHOD_DESCRIPTIONS[method]}
           </Text>
         </View>
@@ -142,27 +143,24 @@ export const InterpolationScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: 18,
+    paddingBottom: 110,
   },
   methodInfoBox: {
-    backgroundColor: '#070A0E',
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.accentViolet,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 4,
+    borderLeftWidth: 3,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     marginBottom: 16,
   },
   methodInfoText: {
-    color: Colors.textSecondary,
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 18,
+    fontWeight: '500',
   },
 });

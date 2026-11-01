@@ -6,8 +6,7 @@ import {
   TouchableOpacityProps,
   ViewStyle,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
-import { Typography } from '../../theme/typography';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface TechButtonProps extends TouchableOpacityProps {
   label: string;
@@ -26,61 +25,67 @@ export const TechButton: React.FC<TechButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const getButtonStyles = () => {
+  const { colors } = useTheme();
+
+  const getVariantStyles = () => {
     switch (variant) {
       case 'primary':
-        return styles.btnPrimary;
+        return {
+          container: [styles.btnPrimary, { backgroundColor: colors.primary }],
+          text: { color: '#FFFFFF' },
+        };
       case 'secondary':
-        return styles.btnSecondary;
+        return {
+          container: [styles.btnSecondary, { backgroundColor: colors.surface, borderColor: colors.border }],
+          text: { color: colors.textPrimary },
+        };
       case 'accent':
-        return styles.btnAccent;
+        return {
+          container: [styles.btnAccent, { backgroundColor: colors.secondary }],
+          text: { color: '#FFFFFF' },
+        };
       case 'danger':
-        return styles.btnDanger;
+        return {
+          container: [styles.btnDanger, { backgroundColor: colors.error }],
+          text: { color: '#FFFFFF' },
+        };
       case 'preset':
-        return styles.btnPreset;
+        return {
+          container: [styles.btnPreset, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }],
+          text: { color: colors.textSecondary },
+        };
       default:
-        return styles.btnPrimary;
+        return {
+          container: [styles.btnPrimary, { backgroundColor: colors.primary }],
+          text: { color: '#FFFFFF' },
+        };
     }
   };
 
-  const getTextStyles = () => {
-    switch (variant) {
-      case 'primary':
-        return styles.textPrimary;
-      case 'secondary':
-        return styles.textSecondary;
-      case 'accent':
-        return styles.textAccent;
-      case 'danger':
-        return styles.textDanger;
-      case 'preset':
-        return styles.textPreset;
-      default:
-        return styles.textPrimary;
-    }
-  };
+  const v = getVariantStyles();
 
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
+      activeOpacity={0.8}
       disabled={disabled}
       style={[
         styles.base,
         size === 'sm' ? styles.sizeSm : styles.sizeMd,
-        getButtonStyles(),
-        disabled && styles.disabled,
+        v.container,
+        disabled ? styles.disabled : null,
         style,
       ]}
       {...props}
     >
+      {icon && <Text style={styles.icon}>{icon}</Text>}
       <Text
         style={[
-          size === 'sm' ? Typography.monoSm : Typography.mono,
           styles.textBase,
-          getTextStyles(),
+          size === 'sm' ? styles.textSm : styles.textMd,
+          v.text,
+          disabled ? { color: colors.textMuted } : null,
         ]}
       >
-        {icon ? `${icon} ` : ''}
         {label}
       </Text>
     </TouchableOpacity>
@@ -89,63 +94,62 @@ export const TechButton: React.FC<TechButtonProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-  },
-  sizeMd: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    borderRadius: 26,
   },
   sizeSm: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 18,
   },
-  btnPrimary: {
-    backgroundColor: '#0284C7',
-    borderColor: '#38BDF8',
-  },
-  btnSecondary: {
-    backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.border,
-  },
-  btnAccent: {
-    backgroundColor: '#047857',
-    borderColor: '#10B981',
-  },
-  btnDanger: {
-    backgroundColor: '#9F1239',
-    borderColor: '#F43F5E',
-  },
-  btnPreset: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  sizeMd: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 26,
   },
   textBase: {
-    fontWeight: '600',
+    fontWeight: '800',
     letterSpacing: 0.3,
   },
-  textPrimary: {
-    color: '#FFFFFF',
+  textSm: {
+    fontSize: 12,
   },
-  textSecondary: {
-    color: Colors.textPrimary,
+  textMd: {
+    fontSize: 15,
   },
-  textAccent: {
-    color: '#ECFDF5',
+  icon: {
+    marginRight: 8,
+    fontSize: 16,
   },
-  textDanger: {
-    color: '#FFF1F2',
+  btnPrimary: {
+    shadowColor: '#FF2E93',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  textPreset: {
-    color: Colors.accentCyan,
-    fontSize: 11,
+  btnSecondary: {
+    borderWidth: 1.5,
+  },
+  btnAccent: {
+    shadowColor: '#00D2D3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  btnDanger: {},
+  btnPreset: {
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
   },
   disabled: {
-    opacity: 0.4,
+    opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
   },
 });

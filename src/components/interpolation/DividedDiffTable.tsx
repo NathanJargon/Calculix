@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { formatFloat } from '../../math/evaluator';
-import { Colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 import { DataPoint, NewtonTermBreakdown } from '../../types/interpolation';
 
@@ -24,160 +24,161 @@ export const DividedDiffTable: React.FC<DividedDiffTableProps> = ({
   points,
   terms,
 }) => {
-  const [activeTab, setActiveTab] = useState<'table' | 'breakdown'>('table');
+  const [activeTab, setActiveTab] = useState<'matrix' | 'polynomial'>('matrix');
   const [isExpanded, setIsExpanded] = useState(true);
+  const { colors } = useTheme();
 
   if (!matrix || matrix.length === 0) {
     return null;
   }
 
-  const n = points.length;
-
   return (
-    <View style={styles.card}>
-      {/* Header bar */}
-      <View style={styles.header}>
-        <View style={styles.tabGroup}>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* Table Card Header with View Switcher */}
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.tabGroup, { backgroundColor: colors.surfaceSecondary }]}>
           <TouchableOpacity
-            style={[
-              styles.tabBtn,
-              activeTab === 'table' ? styles.tabBtnActive : null,
-            ]}
-            onPress={() => setActiveTab('table')}
+            style={[styles.tabBtn, activeTab === 'matrix' ? [styles.tabBtnActive, { backgroundColor: colors.primary }] : null]}
+            onPress={() => setActiveTab('matrix')}
+            activeOpacity={0.7}
           >
             <Text
               style={[
-                Typography.monoSm,
                 styles.tabBtnText,
-                activeTab === 'table' ? styles.tabBtnTextActive : null,
+                activeTab === 'matrix' ? styles.tabBtnTextActive : { color: colors.textSecondary },
               ]}
             >
-              DIFF TABLE
+              Difference Matrix
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               styles.tabBtn,
-              activeTab === 'breakdown' ? styles.tabBtnActive : null,
+              activeTab === 'polynomial' ? [styles.tabBtnActive, { backgroundColor: colors.primary }] : null,
             ]}
-            onPress={() => setActiveTab('breakdown')}
+            onPress={() => setActiveTab('polynomial')}
+            activeOpacity={0.7}
           >
             <Text
               style={[
-                Typography.monoSm,
                 styles.tabBtnText,
-                activeTab === 'breakdown' ? styles.tabBtnTextActive : null,
+                activeTab === 'polynomial' ? styles.tabBtnTextActive : { color: colors.textSecondary },
               ]}
             >
-              TERM BREAKDOWN
+              Term Expansion
             </Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          activeOpacity={0.7}
+          style={[styles.toggleBtn, { backgroundColor: colors.surfaceSecondary }]}
           onPress={() => setIsExpanded(!isExpanded)}
-          style={styles.toggleBtn}
+          activeOpacity={0.7}
         >
-          <Text style={[Typography.monoSm, styles.toggleText]}>
-            {isExpanded ? 'COLLAPSE ▲' : 'EXPAND ▼'}
+          <Text style={[styles.toggleText, { color: colors.textSecondary }]}>
+            {isExpanded ? 'Collapse' : 'Expand'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
-      {isExpanded && activeTab === 'table' && (
+      {/* Difference Matrix View */}
+      {isExpanded && activeTab === 'matrix' && (
         <ScrollView horizontal showsHorizontalScrollIndicator={true}>
           <View style={styles.tableWrapper}>
-            {/* Table Headers */}
-            <View style={styles.headerRow}>
-              <Text style={[styles.headerCell, styles.idxCol]}>i</Text>
-              <Text style={[styles.headerCell, styles.valCol]}>x_i</Text>
-              {headers.slice(1).map((h, colIdx) => (
-                <Text
-                  key={colIdx}
-                  style={[
-                    styles.headerCell,
-                    styles.valCol,
-                    colIdx === 0 ? styles.firstDiffCol : null,
-                  ]}
-                >
+            {/* Column Headers */}
+            <View style={[styles.headerRow, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
+              <Text style={[styles.headerCell, styles.idxCol, { color: colors.textSecondary }]}>i</Text>
+              <Text style={[styles.headerCell, styles.valCol, { color: colors.textSecondary }]}>x_i</Text>
+              <Text style={[styles.headerCell, styles.valCol, { color: colors.textSecondary }]}>f[x_i]</Text>
+              {headers.slice(2).map((h, i) => (
+                <Text key={i} style={[styles.headerCell, styles.valCol, { color: colors.textSecondary }]}>
                   {h}
                 </Text>
               ))}
             </View>
 
             {/* Matrix Rows */}
-            {points.map((p, rowIdx) => (
-              <View
-                key={rowIdx}
-                style={[
-                  styles.dataRow,
-                  rowIdx % 2 === 0 ? styles.evenRow : styles.oddRow,
-                ]}
-              >
-                <Text style={[styles.cell, styles.idxCol]}>{rowIdx}</Text>
-                <Text style={[styles.cell, styles.valCol]}>
-                  {formatFloat(p.x, 4)}
-                </Text>
+            {points.map((pt, i) => {
+              const rowValues = matrix[i] || [];
+              const isEven = i % 2 === 0;
 
-                {Array.from({ length: n }).map((_, colIdx) => {
-                  const val = matrix[rowIdx][colIdx];
-                  const isCoefficient = rowIdx === 0;
-                  const isAvailable = rowIdx + colIdx < n;
+              return (
+                <View
+                  key={i}
+                  style={[
+                    styles.dataRow,
+                    {
+                      backgroundColor: isEven ? colors.surface : colors.background,
+                      borderBottomColor: colors.borderLight,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.cell, styles.idxCol, { color: colors.textMuted }]}>{i}</Text>
+                  <Text style={[styles.cell, styles.valCol, { color: colors.textPrimary }]}>{formatFloat(pt.x, 4)}</Text>
+                  <Text style={[styles.cell, styles.valCol, { color: colors.textPrimary }]}>{formatFloat(pt.y, 4)}</Text>
 
-                  return (
-                    <Text
-                      key={colIdx}
-                      style={[
-                        styles.cell,
-                        styles.valCol,
-                        isCoefficient && isAvailable ? styles.coeffCell : null,
-                        !isAvailable ? styles.emptyCell : null,
-                      ]}
-                    >
-                      {isAvailable ? formatFloat(val, 4) : '—'}
-                    </Text>
-                  );
-                })}
-              </View>
-            ))}
+                  {/* Divided Difference Order Columns */}
+                  {Array.from({ length: points.length - 1 }).map((_, orderIdx) => {
+                    const val = rowValues[orderIdx + 1];
+                    const isDiagonalCoeff = orderIdx + 1 === i + 1 && i === 0;
+
+                    return (
+                      <Text
+                        key={orderIdx}
+                        style={[
+                          styles.cell,
+                          styles.valCol,
+                          val !== null && val !== undefined
+                            ? isDiagonalCoeff
+                              ? [styles.coeffCell, { color: colors.primary }]
+                              : { color: colors.textPrimary }
+                            : [styles.emptyCell, { color: colors.textMuted }],
+                        ]}
+                      >
+                        {val !== null && val !== undefined ? formatFloat(val, 4) : '—'}
+                      </Text>
+                    );
+                  })}
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
       )}
 
-      {/* Term-by-Term Breakdown */}
-      {isExpanded && activeTab === 'breakdown' && (
+      {/* Newton Polynomial Term Expansion View */}
+      {isExpanded && activeTab === 'polynomial' && (
         <ScrollView horizontal showsHorizontalScrollIndicator={true}>
           <View style={styles.tableWrapper}>
-            <View style={styles.headerRow}>
-              <Text style={[styles.headerCell, styles.idxCol]}>k</Text>
-              <Text style={[styles.headerCell, styles.coeffCol]}>Coeff (a_k)</Text>
-              <Text style={[styles.headerCell, styles.factorCol]}>Factor Π(x*-xj)</Text>
-              <Text style={[styles.headerCell, styles.valCol]}>Term Value</Text>
-              <Text style={[styles.headerCell, styles.valCol]}>Cumulative P(x*)</Text>
+            <View style={[styles.headerRow, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
+              <Text style={[styles.headerCell, styles.idxCol, { color: colors.textSecondary }]}>Term</Text>
+              <Text style={[styles.headerCell, styles.coeffCol, { color: colors.textSecondary }]}>Coeff f[...]</Text>
+              <Text style={[styles.headerCell, styles.factorCol, { color: colors.textSecondary }]}>Product Factor</Text>
+              <Text style={[styles.headerCell, styles.valCol, { color: colors.textSecondary }]}>Term Value</Text>
+              <Text style={[styles.headerCell, styles.valCol, { color: colors.textSecondary }]}>Running Sum</Text>
             </View>
 
-            {terms.map((t, idx) => (
+            {terms.map((t, i) => (
               <View
-                key={idx}
+                key={i}
                 style={[
                   styles.dataRow,
-                  idx % 2 === 0 ? styles.evenRow : styles.oddRow,
+                  {
+                    backgroundColor: i % 2 === 0 ? colors.surface : colors.background,
+                    borderBottomColor: colors.borderLight,
+                  },
                 ]}
               >
-                <Text style={[styles.cell, styles.idxCol]}>{t.index}</Text>
-                <Text style={[styles.cell, styles.coeffCol, styles.coeffCell]}>
+                <Text style={[styles.cell, styles.idxCol, { color: colors.textMuted }]}>{t.index}</Text>
+                <Text style={[styles.cell, styles.coeffCol, { color: colors.primary, fontWeight: '700' }]}>
                   {formatFloat(t.coefficient, 5)}
                 </Text>
-                <Text style={[styles.cell, styles.factorCol]}>
-                  {formatFloat(t.evaluatedFactor, 4)}
-                </Text>
-                <Text style={[styles.cell, styles.valCol]}>
+                <Text style={[styles.cell, styles.factorCol, { color: colors.textPrimary }]}>{t.factors || '1'}</Text>
+                <Text style={[styles.cell, styles.valCol, { color: colors.textPrimary }]}>
                   {formatFloat(t.termValue, 5)}
                 </Text>
-                <Text style={[styles.cellHighlight, styles.valCol]}>
+                <Text style={[styles.cellHighlight, styles.valCol, { color: colors.success }]}>
                   {formatFloat(t.cumulativeSum, 5)}
                 </Text>
               </View>
@@ -191,109 +192,84 @@ export const DividedDiffTable: React.FC<DividedDiffTableProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 24,
+    borderRadius: 24,
+    marginBottom: 20,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: Colors.surfaceLight,
+    padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   tabGroup: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: 5,
-    padding: 2,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: 14,
+    padding: 3,
   },
   tabBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  tabBtnActive: {
-    backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.borderActive,
-    borderWidth: 1,
-  },
+  tabBtnActive: {},
   tabBtnText: {
-    color: Colors.textSecondary,
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
   tabBtnTextActive: {
-    color: Colors.accentCyan,
+    color: '#FFFFFF',
   },
   toggleBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: Colors.surface,
-    borderRadius: 4,
-    borderColor: Colors.border,
-    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   toggleText: {
-    color: Colors.accentCyan,
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
   tableWrapper: {
     minWidth: 480,
   },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: '#0B0F17',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
   },
   dataRow: {
     flexDirection: 'row',
-    paddingVertical: 7,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
     alignItems: 'center',
-  },
-  evenRow: {
-    backgroundColor: '#111722',
-  },
-  oddRow: {
-    backgroundColor: '#141D2B',
   },
   headerCell: {
     ...Typography.monoSm,
     fontWeight: '700',
-    color: Colors.textSecondary,
     fontSize: 11,
   },
   cell: {
     ...Typography.monoSm,
-    color: Colors.textPrimary,
     fontSize: 12,
   },
   cellHighlight: {
     ...Typography.monoSm,
-    color: Colors.accentEmerald,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 12,
   },
   coeffCell: {
-    color: Colors.accentCyan,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   emptyCell: {
-    color: Colors.textMuted,
     opacity: 0.4,
   },
   idxCol: {
@@ -302,9 +278,6 @@ const styles = StyleSheet.create({
   },
   valCol: {
     width: 90,
-  },
-  firstDiffCol: {
-    color: Colors.accentTeal,
   },
   coeffCol: {
     width: 110,

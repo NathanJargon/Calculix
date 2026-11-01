@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { formatFloat } from '../../math/evaluator';
-import { Colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 import { LagrangeBasisTerm } from '../../types/interpolation';
 
@@ -15,73 +15,69 @@ interface LagrangeBasisTableProps {
   terms: LagrangeBasisTerm[];
 }
 
-export const LagrangeBasisTable: React.FC<LagrangeBasisTableProps> = ({
-  terms,
-}) => {
+export const LagrangeBasisTable: React.FC<LagrangeBasisTableProps> = ({ terms }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const { colors } = useTheme();
 
   if (!terms || terms.length === 0) {
     return null;
   }
 
   return (
-    <View style={styles.card}>
-      {/* Header bar */}
-      <View style={styles.header}>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* Table Header */}
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.titleRow}>
-          <Text style={[Typography.label, styles.titleText]}>
-            LAGRANGE BASIS POLYNOMIALS L_i(x)
-          </Text>
-          <View style={styles.badge}>
-            <Text style={[Typography.monoSm, styles.badgeText]}>
-              {terms.length} BASIS TERMS
+          <Text style={[styles.titleText, { color: colors.textPrimary }]}>Lagrange Weights L_i(x)</Text>
+          <View style={[styles.badge, { backgroundColor: colors.accentLight }]}>
+            <Text style={[styles.badgeText, { color: colors.accent }]}>
+              {terms.length} Basis Poly
             </Text>
           </View>
         </View>
 
         <TouchableOpacity
-          activeOpacity={0.7}
+          style={[styles.toggleBtn, { backgroundColor: colors.surfaceSecondary }]}
           onPress={() => setIsExpanded(!isExpanded)}
-          style={styles.toggleBtn}
+          activeOpacity={0.7}
         >
-          <Text style={[Typography.monoSm, styles.toggleText]}>
-            {isExpanded ? 'COLLAPSE ▲' : 'EXPAND ▼'}
+          <Text style={[styles.toggleText, { color: colors.textSecondary }]}>
+            {isExpanded ? 'Collapse' : 'Expand'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      {/* Basis Polynomials Table */}
       {isExpanded && (
         <ScrollView horizontal showsHorizontalScrollIndicator={true}>
           <View style={styles.tableWrapper}>
-            <View style={styles.headerRow}>
-              <Text style={[styles.headerCell, styles.idxCol]}>i</Text>
-              <Text style={[styles.headerCell, styles.coordCol]}>(x_i, y_i)</Text>
-              <Text style={[styles.headerCell, styles.valCol]}>L_i(x*)</Text>
-              <Text style={[styles.headerCell, styles.valCol]}>y_i · L_i(x*)</Text>
-              <Text style={[styles.headerCell, styles.valCol]}>Cumulative P</Text>
+            <View style={[styles.headerRow, { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.border }]}>
+              <Text style={[styles.headerCell, styles.idxCol, { color: colors.textSecondary }]}>i</Text>
+              <Text style={[styles.headerCell, styles.coordCol, { color: colors.textSecondary }]}>Node (x_i, y_i)</Text>
+              <Text style={[styles.headerCell, styles.valCol, { color: colors.textSecondary }]}>L_i(x*)</Text>
+              <Text style={[styles.headerCell, styles.valCol, { color: colors.textSecondary }]}>y_i · L_i(x*)</Text>
             </View>
 
-            {terms.map((t, idx) => (
+            {terms.map((t) => (
               <View
-                key={idx}
+                key={t.index}
                 style={[
                   styles.dataRow,
-                  idx % 2 === 0 ? styles.evenRow : styles.oddRow,
+                  {
+                    backgroundColor: t.index % 2 === 0 ? colors.surface : colors.background,
+                    borderBottomColor: colors.borderLight,
+                  },
                 ]}
               >
-                <Text style={[styles.cell, styles.idxCol]}>L_{t.index}</Text>
-                <Text style={[styles.cell, styles.coordCol]}>
+                <Text style={[styles.cell, styles.idxCol, { color: colors.textMuted }]}>{t.index}</Text>
+                <Text style={[styles.cell, styles.coordCol, { color: colors.textPrimary }]}>
                   ({formatFloat(t.xi, 3)}, {formatFloat(t.yi, 3)})
                 </Text>
-                <Text style={[styles.cell, styles.valCol, styles.basisWeight]}>
+                <Text style={[styles.cell, styles.valCol, styles.basisWeight, { color: colors.accent }]}>
                   {formatFloat(t.evaluatedBasisWeight, 5)}
                 </Text>
-                <Text style={[styles.cell, styles.valCol]}>
+                <Text style={[styles.cellHighlight, styles.valCol, { color: colors.success }]}>
                   {formatFloat(t.weightedValue, 5)}
-                </Text>
-                <Text style={[styles.cellHighlight, styles.valCol]}>
-                  {formatFloat(t.cumulativeSum, 5)}
                 </Text>
               </View>
             ))}
@@ -89,22 +85,16 @@ export const LagrangeBasisTable: React.FC<LagrangeBasisTableProps> = ({
         </ScrollView>
       )}
 
-      {/* Basis formulas list */}
+      {/* Analytical Basis Formulas List */}
       {isExpanded && (
-        <View style={styles.formulaSection}>
-          <Text style={[Typography.label, styles.formulaHeading]}>
-            EXACT BASIS FORMULAS:
+        <View style={[styles.formulaSection, { backgroundColor: colors.surfaceSecondary, borderTopColor: colors.border }]}>
+          <Text style={[styles.formulaHeading, { color: colors.textSecondary }]}>
+            Cardinal Basis Algebraic Expressions:
           </Text>
           {terms.map((t) => (
             <View key={t.index} style={styles.formulaRow}>
-              <Text style={[Typography.monoSm, styles.formulaIndex]}>
-                L_{t.index}(x) =
-              </Text>
-              <Text
-                style={[Typography.monoSm, styles.formulaText]}
-                numberOfLines={2}
-                selectable
-              >
+              <Text style={[styles.formulaIndex, { color: colors.accent }]}>L_{t.index}(x) =</Text>
+              <Text style={[Typography.monoSm, styles.formulaText, { color: colors.textPrimary }]}>
                 {t.basisFormula}
               </Text>
             </View>
@@ -117,101 +107,82 @@ export const LagrangeBasisTable: React.FC<LagrangeBasisTableProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 24,
+    borderRadius: 24,
+    marginBottom: 20,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: Colors.surfaceLight,
+    padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   titleText: {
-    color: Colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '800',
     marginRight: 8,
   },
   badge: {
-    backgroundColor: '#0284C720',
-    borderColor: '#0284C7',
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
   },
   badgeText: {
-    color: Colors.accentCyan,
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
   },
   toggleBtn: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    backgroundColor: Colors.surface,
-    borderRadius: 4,
-    borderColor: Colors.border,
-    borderWidth: 1,
+    borderRadius: 12,
   },
   toggleText: {
-    color: Colors.accentCyan,
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
   tableWrapper: {
     minWidth: 460,
   },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: '#0B0F17',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
   },
   dataRow: {
     flexDirection: 'row',
-    paddingVertical: 7,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
     alignItems: 'center',
-  },
-  evenRow: {
-    backgroundColor: '#111722',
-  },
-  oddRow: {
-    backgroundColor: '#141D2B',
   },
   headerCell: {
     ...Typography.monoSm,
     fontWeight: '700',
-    color: Colors.textSecondary,
     fontSize: 11,
   },
   cell: {
     ...Typography.monoSm,
-    color: Colors.textPrimary,
     fontSize: 12,
   },
   cellHighlight: {
     ...Typography.monoSm,
-    color: Colors.accentEmerald,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 12,
   },
   basisWeight: {
-    color: Colors.accentViolet,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   idxCol: {
     width: 44,
@@ -224,29 +195,26 @@ const styles = StyleSheet.create({
     width: 100,
   },
   formulaSection: {
-    padding: 10,
+    padding: 14,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: '#080C12',
   },
   formulaHeading: {
-    color: Colors.textMuted,
-    marginBottom: 6,
-    fontSize: 10,
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: '700',
   },
   formulaRow: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 6,
     alignItems: 'flex-start',
   },
   formulaIndex: {
-    color: Colors.accentViolet,
     width: 65,
-    fontWeight: '600',
+    fontWeight: '800',
+    fontSize: 12,
   },
   formulaText: {
     flex: 1,
-    color: Colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
   },
 });

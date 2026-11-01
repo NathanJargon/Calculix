@@ -12,8 +12,7 @@ import { IterationTable } from '../components/rootFinding/IterationTable';
 import { RootInputForm } from '../components/rootFinding/RootInputForm';
 import { RootResults } from '../components/rootFinding/RootResults';
 import { solveRoot } from '../math/rootFinding';
-import { Colors } from '../theme/colors';
-import { Typography } from '../theme/typography';
+import { useTheme } from '../theme/ThemeContext';
 import {
   RootFindingInput,
   RootFindingResult,
@@ -21,24 +20,26 @@ import {
 } from '../types/rootFinding';
 
 const METHOD_OPTIONS: TabOption<RootMethodType>[] = [
-  { id: 'bisection', label: 'BISECTION', badge: 'O(1)' },
-  { id: 'newton', label: 'NEWTON-RAPHSON', badge: 'O(2)' },
-  { id: 'secant', label: 'SECANT', badge: 'O(1.62)' },
-  { id: 'fixed-point', label: 'FIXED-POINT', badge: 'g(x)' },
+  { id: 'bisection', label: 'Bisection', badge: 'Guaranteed' },
+  { id: 'newton', label: 'Newton', badge: 'Fast' },
+  { id: 'secant', label: 'Secant', badge: 'Flexible' },
+  { id: 'fixed-point', label: 'Fixed-Point', badge: 'Formula' },
 ];
 
 const METHOD_DESCRIPTIONS: Record<RootMethodType, string> = {
   bisection:
-    'Guaranteed bracketing method. Requires continuous f(x) and an interval [a, b] where f(a)·f(b) < 0. Halves error interval each step.',
+    'Reliable interval halving method. Finds the root between start (a) and end (b) where the curve crosses zero.',
   newton:
-    "Open tangent-line method. Achieves quadratic convergence rate (doubles accurate digits each step). Requires analytical or numerical derivative f'(x).",
+    'High-speed tangent method. Uses the slope of the curve to rapidly converge to the root in just a few steps.',
   secant:
-    "Open quasi-Newton method. Replaces analytical derivative with finite-difference slope across two initial estimates (x0, x1). Convergence order ~1.618.",
+    'Quick slope approximation using two test guesses. Faster than bisection and does not require manual derivatives.',
   'fixed-point':
-    'Rewrites f(x) = 0 into x = g(x). Converges locally to fixed-point x* whenever |g\'(x)| < 1 (Lipschitz contraction mapping).',
+    'Iterative method that rewrites f(x) = 0 into x = g(x) and steps toward the intersection point.',
 };
 
 export const RootFindingScreen: React.FC = () => {
+  const { colors } = useTheme();
+
   const [input, setInput] = useState<RootFindingInput>({
     method: 'bisection',
     functionStr: 'x^3 - x - 2',
@@ -64,9 +65,8 @@ export const RootFindingScreen: React.FC = () => {
   );
 
   const handleMethodChange = (newMethod: RootMethodType) => {
-    let updated = { ...input, method: newMethod };
+    let updated: RootFindingInput = { ...input, method: newMethod };
 
-    // Configure appropriate default sample values per method
     if (newMethod === 'bisection' && (updated.a === undefined || updated.b === undefined)) {
       updated.functionStr = 'x^3 - x - 2';
       updated.a = 1;
@@ -90,7 +90,6 @@ export const RootFindingScreen: React.FC = () => {
 
   const handleSolve = () => {
     setIsSolving(true);
-    // Microtask deferral so UI remains responsive
     setTimeout(() => {
       const res = solveRoot(input);
       setResult(res);
@@ -101,7 +100,7 @@ export const RootFindingScreen: React.FC = () => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <ScrollView
         style={styles.scroll}
@@ -116,8 +115,8 @@ export const RootFindingScreen: React.FC = () => {
         />
 
         {/* Method Description Brief */}
-        <View style={styles.methodInfoBox}>
-          <Text style={[Typography.monoSm, styles.methodInfoText]}>
+        <View style={[styles.methodInfoBox, { backgroundColor: colors.secondaryLight, borderLeftColor: colors.secondary }]}>
+          <Text style={[styles.methodInfoText, { color: colors.textSecondary }]}>
             {METHOD_DESCRIPTIONS[input.method]}
           </Text>
         </View>
@@ -125,7 +124,7 @@ export const RootFindingScreen: React.FC = () => {
         {/* Dynamic Inputs Form */}
         <RootInputForm
           input={input}
-          onChange={(patch) => setInput((prev) => ({ ...prev, ...patch }))}
+          onChange={(patch: Partial<RootFindingInput>) => setInput((prev: RootFindingInput) => ({ ...prev, ...patch }))}
           onSolve={handleSolve}
           isSolving={isSolving}
         />
@@ -148,27 +147,24 @@ export const RootFindingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: 18,
+    paddingBottom: 110,
   },
   methodInfoBox: {
-    backgroundColor: '#070A0E',
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.accentCyan,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 4,
+    borderLeftWidth: 3,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     marginBottom: 16,
   },
   methodInfoText: {
-    color: Colors.textSecondary,
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 18,
+    fontWeight: '500',
   },
 });

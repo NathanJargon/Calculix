@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { Colors } from '../../theme/colors';
-import { Typography } from '../../theme/typography';
+import { useTheme } from '../../theme/ThemeContext';
 import { ConvergenceStatus } from '../../types/rootFinding';
 
 interface StatusBadgeProps {
@@ -10,82 +9,82 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, style }) => {
+  const { colors } = useTheme();
+
   const getBadgeConfig = () => {
     switch (status) {
       case 'CONVERGED':
       case 'SUCCESS':
         return {
-          bg: Colors.badgeSuccessBg,
-          border: Colors.badgeSuccessBorder,
-          text: Colors.badgeSuccessText,
-          dotColor: Colors.accentEmerald,
-          label: 'CONVERGED',
+          bg: colors.successLight,
+          border: colors.success,
+          text: colors.success,
+          icon: '✓',
+          label: 'Found Solution',
         };
       case 'MAX_ITERATIONS_REACHED':
         return {
-          bg: Colors.badgeWarningBg,
-          border: Colors.badgeWarningBorder,
-          text: Colors.badgeWarningText,
-          dotColor: Colors.accentAmber,
-          label: 'MAX ITERATIONS',
+          bg: colors.warningLight,
+          border: colors.warning,
+          text: colors.warning,
+          icon: '⚠',
+          label: 'Max Steps Reached',
         };
       case 'INVALID_BRACKET':
         return {
-          bg: Colors.badgeErrorBg,
-          border: Colors.badgeErrorBorder,
-          text: Colors.badgeErrorText,
-          dotColor: Colors.accentRose,
-          label: 'INVALID BRACKET',
+          bg: colors.errorLight,
+          border: colors.error,
+          text: colors.error,
+          icon: '✕',
+          label: 'Bracket Must Cross 0',
         };
       case 'DERIVATIVE_ZERO':
         return {
-          bg: Colors.badgeErrorBg,
-          border: Colors.badgeErrorBorder,
-          text: Colors.badgeErrorText,
-          dotColor: Colors.accentRose,
-          label: "f'(x) = 0 (SINGULAR)",
+          bg: colors.errorLight,
+          border: colors.error,
+          text: colors.error,
+          icon: '✕',
+          label: "Slope Zero (f'=0)",
         };
       case 'DIVISION_BY_ZERO':
         return {
-          bg: Colors.badgeErrorBg,
-          border: Colors.badgeErrorBorder,
-          text: Colors.badgeErrorText,
-          dotColor: Colors.accentRose,
-          label: 'ZERO DIVISION',
+          bg: colors.errorLight,
+          border: colors.error,
+          text: colors.error,
+          icon: '✕',
+          label: 'Division by Zero',
         };
       case 'DIVERGED':
         return {
-          bg: Colors.badgeErrorBg,
-          border: Colors.badgeErrorBorder,
-          text: Colors.badgeErrorText,
-          dotColor: Colors.accentRose,
-          label: 'DIVERGED',
+          bg: colors.errorLight,
+          border: colors.error,
+          text: colors.error,
+          icon: '✕',
+          label: 'Diverged',
         };
       case 'DUPLICATE_X':
         return {
-          bg: Colors.badgeErrorBg,
-          border: Colors.badgeErrorBorder,
-          text: Colors.badgeErrorText,
-          dotColor: Colors.accentRose,
-          label: 'DUPLICATE X',
+          bg: colors.errorLight,
+          border: colors.error,
+          text: colors.error,
+          icon: '✕',
+          label: 'Duplicate x Values',
         };
       case 'INSUFFICIENT_POINTS':
         return {
-          bg: Colors.badgeWarningBg,
-          border: Colors.badgeWarningBorder,
-          text: Colors.badgeWarningText,
-          dotColor: Colors.accentAmber,
-          label: 'POINTS NEEDED',
+          bg: colors.warningLight,
+          border: colors.warning,
+          text: colors.warning,
+          icon: '⚠',
+          label: 'Need ≥ 2 Points',
         };
-      case 'PARSING_ERROR':
-      case 'ERROR':
       default:
         return {
-          bg: Colors.badgeErrorBg,
-          border: Colors.badgeErrorBorder,
-          text: Colors.badgeErrorText,
-          dotColor: Colors.accentRose,
-          label: 'ERROR',
+          bg: colors.errorLight,
+          border: colors.error,
+          text: colors.error,
+          icon: '✕',
+          label: 'Computation Error',
         };
     }
   };
@@ -96,12 +95,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, style }) => {
     <View
       style={[
         styles.badge,
-        { backgroundColor: config.bg, borderColor: config.border },
+        {
+          backgroundColor: config.bg,
+          borderColor: config.border,
+        },
         style,
       ]}
     >
-      <View style={[styles.dot, { backgroundColor: config.dotColor }]} />
-      <Text style={[Typography.monoSm, styles.label, { color: config.text }]}>
+      <Text style={[styles.badgeIcon, { color: config.text }]}>{config.icon}</Text>
+      <Text style={[styles.badgeText, { color: config.text }]}>
         {config.label}
       </Text>
     </View>
@@ -112,21 +114,18 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
     borderWidth: 1,
-    alignSelf: 'flex-start',
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
+  badgeIcon: {
+    fontSize: 11,
+    fontWeight: '800',
+    marginRight: 4,
   },
-  label: {
+  badgeText: {
+    fontSize: 11,
     fontWeight: '700',
-    fontSize: 10,
-    letterSpacing: 0.6,
   },
 });

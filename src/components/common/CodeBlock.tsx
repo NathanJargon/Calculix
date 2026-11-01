@@ -6,7 +6,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 
 interface CodeBlockProps {
@@ -23,29 +23,26 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   style,
 }) => {
   const [copied, setCopied] = useState(false);
+  const { colors } = useTheme();
 
   const handleCopy = () => {
-    // Visual feedback
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }, style]}>
       {(title || language) && (
-        <View style={styles.header}>
-          <Text style={[Typography.monoSm, styles.title]}>
-            {title || 'EXPRESSION'}
-          </Text>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.textSecondary }]}>{title || 'Formula'}</Text>
           <View style={styles.headerRight}>
-            <Text style={[Typography.monoSm, styles.langTag]}>{language}</Text>
             <TouchableOpacity
               onPress={handleCopy}
               activeOpacity={0.6}
-              style={styles.copyBtn}
+              style={[styles.copyBtn, { backgroundColor: colors.surfaceSecondary }]}
             >
-              <Text style={[Typography.monoSm, styles.copyText]}>
-                {copied ? '✓ COPIED' : 'COPY'}
+              <Text style={[styles.copyText, { color: colors.primary }]}>
+                {copied ? '✓ Copied' : 'Copy'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -53,10 +50,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
       )}
 
       <View style={styles.codeContainer}>
-        <Text
-          style={[Typography.mono, styles.codeText]}
-          selectable
-        >
+        <Text style={[Typography.mono, styles.codeText, { color: colors.textPrimary }]} selectable>
           {code}
         </Text>
       </View>
@@ -66,54 +60,40 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#070A0E',
-    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginVertical: 8,
+    marginTop: 10,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   title: {
-    color: Colors.textSecondary,
     fontSize: 11,
-    letterSpacing: 0.5,
+    fontWeight: '700',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  langTag: {
-    color: Colors.textMuted,
-    fontSize: 10,
-    marginRight: 10,
-  },
   copyBtn: {
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   copyText: {
-    color: Colors.accentCyan,
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '800',
   },
   codeContainer: {
-    padding: 12,
+    padding: 14,
   },
   codeText: {
-    color: Colors.accentEmerald,
     fontSize: 13,
-    lineHeight: 19,
   },
 });

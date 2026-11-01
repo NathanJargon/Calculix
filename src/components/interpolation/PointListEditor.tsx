@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 import { DataPoint, InterpolationMethodType } from '../../types/interpolation';
 import { TechButton } from '../common/TechButton';
@@ -31,7 +31,7 @@ interface InterpolationPreset {
 
 const PRESETS: InterpolationPreset[] = [
   {
-    name: 'Quadratic (x^2)',
+    name: 'Quadratic (x²)',
     points: [
       { x: 1, y: 1 },
       { x: 2, y: 4 },
@@ -41,7 +41,7 @@ const PRESETS: InterpolationPreset[] = [
     targetX: 2.5,
   },
   {
-    name: 'Thermodynamics (Steam)',
+    name: 'Thermodynamics',
     points: [
       { x: 100, y: 0.598 },
       { x: 150, y: 1.013 },
@@ -51,7 +51,7 @@ const PRESETS: InterpolationPreset[] = [
     targetX: 175,
   },
   {
-    name: 'Kinematics (Time/Vel)',
+    name: 'Velocity Data',
     points: [
       { x: 0, y: 0 },
       { x: 10, y: 227.04 },
@@ -71,6 +71,8 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
   onSolve,
   isSolving,
 }) => {
+  const { colors } = useTheme();
+
   const addPoint = () => {
     const lastX = points.length > 0 ? points[points.length - 1].x : 0;
     const newPoint: DataPoint = {
@@ -83,7 +85,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 
   const removePoint = (index: number) => {
     if (points.length <= 2) {
-      return; // Keep at least 2 points
+      return;
     }
     const updated = points.filter((_, idx) => idx !== index);
     onPointsChange(updated);
@@ -110,21 +112,19 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Presets Header */}
-      <View style={styles.presetSection}>
-        <Text style={[Typography.monoSm, styles.presetHeading]}>PRESETS:</Text>
+      <View style={[styles.presetSection, { borderBottomColor: colors.borderLight }]}>
+        <Text style={[styles.presetHeading, { color: colors.textSecondary }]}>Examples:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {PRESETS.map((preset, idx) => (
             <TouchableOpacity
               key={idx}
               activeOpacity={0.7}
               onPress={() => loadPreset(preset)}
-              style={styles.presetChip}
+              style={[styles.presetChip, { backgroundColor: colors.secondaryLight }]}
             >
-              <Text style={[Typography.monoSm, styles.presetText]}>
-                {preset.name}
-              </Text>
+              <Text style={[styles.presetText, { color: colors.secondary }]}>{preset.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -132,7 +132,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 
       {/* Target X Input */}
       <TechInput
-        label="EVALUATION TARGET (x*)"
+        label="Estimate Value at (x*)"
         prefix="x* ="
         placeholder="e.g. 2.5"
         keyboardType="numeric"
@@ -145,46 +145,46 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 
       {/* Points Table Header */}
       <View style={styles.pointsHeaderRow}>
-        <Text style={[Typography.label, styles.pointsTitle]}>
-          COORDINATE PAIRS ({points.length} POINTS)
+        <Text style={[styles.pointsTitle, { color: colors.textPrimary }]}>
+          Known Data Points ({points.length})
         </Text>
         <TouchableOpacity
           onPress={addPoint}
           activeOpacity={0.7}
-          style={styles.addBtn}
+          style={[styles.addBtn, { backgroundColor: colors.secondaryLight }]}
         >
-          <Text style={[Typography.monoSm, styles.addBtnText]}>+ ADD POINT</Text>
+          <Text style={[styles.addBtnText, { color: colors.secondary }]}>+ Add Point</Text>
         </TouchableOpacity>
       </View>
 
       {/* Column labels */}
-      <View style={styles.colHeaderRow}>
-        <Text style={[styles.colHeaderCell, styles.idxCol]}>#</Text>
-        <Text style={[styles.colHeaderCell, styles.coordCol]}>x_i</Text>
-        <Text style={[styles.colHeaderCell, styles.coordCol]}>y_i</Text>
-        <Text style={[styles.colHeaderCell, styles.actionCol]}>DEL</Text>
+      <View style={[styles.colHeaderRow, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.colHeaderCell, styles.idxCol, { color: colors.textMuted }]}>#</Text>
+        <Text style={[styles.colHeaderCell, styles.coordCol, { color: colors.textMuted }]}>x (input)</Text>
+        <Text style={[styles.colHeaderCell, styles.coordCol, { color: colors.textMuted }]}>y (output)</Text>
+        <Text style={[styles.colHeaderCell, styles.actionCol, { color: colors.textMuted }]}>Del</Text>
       </View>
 
       {/* Points List */}
       {points.map((p, index) => (
         <View key={p.id} style={styles.pointRow}>
-          <Text style={[Typography.monoSm, styles.idxCell]}>{index}</Text>
+          <Text style={[styles.idxCell, { color: colors.textMuted }]}>{index + 1}</Text>
 
-          <View style={styles.inputCell}>
+          <View style={[styles.inputCell, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <TextInput
-              style={[Typography.mono, styles.coordInput]}
+              style={[Typography.mono, styles.coordInput, { color: colors.textPrimary }]}
               keyboardType="numeric"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               defaultValue={String(p.x)}
               onChangeText={(t) => updatePoint(index, 'x', t)}
             />
           </View>
 
-          <View style={styles.inputCell}>
+          <View style={[styles.inputCell, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <TextInput
-              style={[Typography.mono, styles.coordInput]}
+              style={[Typography.mono, styles.coordInput, { color: colors.textPrimary }]}
               keyboardType="numeric"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               defaultValue={String(p.y)}
               onChangeText={(t) => updatePoint(index, 'y', t)}
             />
@@ -198,7 +198,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
             <Text
               style={[
                 styles.deleteIcon,
-                points.length <= 2 ? styles.deleteIconDisabled : null,
+                { color: points.length <= 2 ? colors.border : colors.error },
               ]}
             >
               ✕
@@ -209,9 +209,8 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 
       {/* Execute Button */}
       <TechButton
-        label={isSolving ? 'CALCULATING INTERPOLATION...' : 'EVALUATE INTERPOLATION'}
+        label={isSolving ? 'Interpolating...' : 'Calculate Interpolation'}
         variant="primary"
-        icon="⚡"
         onPress={onSolve}
         disabled={isSolving || points.length < 2}
         style={styles.solveBtn}
@@ -222,12 +221,15 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 24,
+    padding: 18,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   presetSection: {
     flexDirection: 'row',
@@ -235,60 +237,52 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   presetHeading: {
-    color: Colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
     marginRight: 8,
   },
   presetChip: {
-    backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.border,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
   },
   presetText: {
-    color: Colors.accentCyan,
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '700',
   },
   pointsHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 8,
     marginBottom: 8,
   },
   pointsTitle: {
-    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '800',
   },
   addBtn: {
-    backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.borderActive,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
   },
   addBtnText: {
-    color: Colors.accentCyan,
-    fontWeight: '700',
-    fontSize: 10,
+    fontWeight: '800',
+    fontSize: 11,
   },
   colHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   colHeaderCell: {
-    ...Typography.label,
-    color: Colors.textMuted,
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '700',
   },
   idxCol: {
     width: 28,
@@ -305,27 +299,26 @@ const styles = StyleSheet.create({
   pointRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   idxCell: {
     width: 28,
     textAlign: 'center',
-    color: Colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
   },
   inputCell: {
     flex: 1,
-    marginHorizontal: 3,
-    backgroundColor: '#090D14',
+    marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
+    borderRadius: 14,
   },
   coordInput: {
-    color: Colors.textPrimary,
     fontSize: 13,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     textAlign: 'center',
+    fontWeight: '700',
   },
   deleteBtn: {
     width: 36,
@@ -333,14 +326,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteIcon: {
-    color: Colors.accentRose,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  deleteIconDisabled: {
-    color: Colors.border,
+    fontWeight: '800',
   },
   solveBtn: {
-    marginTop: 12,
+    marginTop: 14,
   },
 });

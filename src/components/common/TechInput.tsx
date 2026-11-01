@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 
 interface TechInputProps extends TextInputProps {
@@ -29,26 +29,36 @@ export const TechInput: React.FC<TechInputProps> = ({
   onClear,
   value,
   style,
+  onFocus,
+  onBlur,
   ...props
 }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const { colors } = useTheme();
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
         <View style={styles.labelRow}>
-          <Text style={[Typography.label, styles.labelText]}>{label}</Text>
-          {error && <Text style={[Typography.monoSm, styles.errorText]}>{error}</Text>}
+          <Text style={[Typography.label, styles.labelText, { color: colors.textPrimary }]}>{label}</Text>
+          {error && <Text style={[Typography.monoSm, styles.errorText, { color: colors.error }]}>{error}</Text>}
         </View>
       )}
 
       <View
         style={[
           styles.inputWrapper,
-          error ? styles.inputWrapperError : null,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+          isFocused ? [styles.inputWrapperFocused, { borderColor: colors.primary }] : null,
+          error ? [styles.inputWrapperError, { borderColor: colors.error }] : null,
         ]}
       >
         {prefix && (
           <View style={styles.prefixContainer}>
-            <Text style={[Typography.monoSm, styles.prefixText]}>{prefix}</Text>
+            <Text style={[styles.prefixText, { color: colors.primary }]}>{prefix}</Text>
           </View>
         )}
 
@@ -56,31 +66,40 @@ export const TechInput: React.FC<TechInputProps> = ({
           style={[
             Typography.mono,
             styles.input,
+            { color: colors.textPrimary },
             prefix ? styles.inputWithPrefix : null,
             suffix ? styles.inputWithSuffix : null,
             style,
           ]}
-          placeholderTextColor={Colors.textMuted}
-          selectionColor={Colors.accentCyan}
+          placeholderTextColor={colors.textMuted}
+          selectionColor={colors.primary}
           value={value}
           autoCapitalize="none"
           autoCorrect={false}
+          onFocus={(e) => {
+            setIsFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            onBlur?.(e);
+          }}
           {...props}
         />
 
         {onClear && !!value && (
           <TouchableOpacity
-            style={styles.clearBtn}
+            style={[styles.clearBtn, { backgroundColor: colors.surfaceSecondary }]}
             onPress={onClear}
             activeOpacity={0.7}
           >
-            <Text style={styles.clearIcon}>✕</Text>
+            <Text style={[styles.clearIcon, { color: colors.textMuted }]}>✕</Text>
           </TouchableOpacity>
         )}
 
         {suffix && (
           <View style={styles.suffixContainer}>
-            <Text style={[Typography.monoSm, styles.suffixText]}>{suffix}</Text>
+            <Text style={[styles.suffixText, { color: colors.textMuted }]}>{suffix}</Text>
           </View>
         )}
       </View>
@@ -90,77 +109,70 @@ export const TechInput: React.FC<TechInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginBottom: 5,
+    marginBottom: 6,
   },
   labelText: {
-    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
   },
   errorText: {
-    color: Colors.accentRose,
     fontSize: 11,
+    fontWeight: '600',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    borderWidth: 1,
-    borderRadius: 6,
-    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderRadius: 16,
+    minHeight: 48,
+    paddingHorizontal: 14,
   },
-  inputWrapperError: {
-    borderColor: Colors.accentRose,
-    backgroundColor: '#88133715',
+  inputWrapperFocused: {
+    shadowColor: '#FF2E93',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
   },
+  inputWrapperError: {},
   prefixContainer: {
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRightWidth: 1,
-    borderRightColor: Colors.border,
-    justifyContent: 'center',
+    paddingRight: 6,
   },
   prefixText: {
-    color: Colors.accentCyan,
-    fontWeight: '600',
+    fontWeight: '800',
+    fontSize: 13,
   },
   suffixContainer: {
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderLeftWidth: 1,
-    borderLeftColor: Colors.border,
-    justifyContent: 'center',
+    paddingLeft: 6,
   },
   suffixText: {
-    color: Colors.textMuted,
+    fontSize: 12,
   },
   input: {
     flex: 1,
-    color: Colors.textPrimary,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
     fontSize: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
   },
   inputWithPrefix: {
-    paddingLeft: 10,
+    paddingLeft: 4,
   },
   inputWithSuffix: {
-    paddingRight: 10,
+    paddingRight: 4,
   },
   clearBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 4,
+    padding: 6,
+    borderRadius: 12,
+    marginLeft: 6,
   },
   clearIcon: {
-    color: Colors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

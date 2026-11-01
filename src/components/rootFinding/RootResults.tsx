@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { formatFloat } from '../../math/evaluator';
-import { Colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 import { RootFindingResult } from '../../types/rootFinding';
 import { CodeBlock } from '../common/CodeBlock';
@@ -13,27 +13,23 @@ interface RootResultsProps {
 }
 
 export const RootResults: React.FC<RootResultsProps> = ({ result }) => {
+  const { colors } = useTheme();
   const rootStr =
-    result.root !== null ? formatFloat(result.root, 8) : 'N/A';
+    result.root !== null ? formatFloat(result.root, 6) : 'N/A';
 
   return (
-    <View style={styles.card}>
-      {/* Header with status */}
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={[Typography.label, styles.subHeading]}>
-            NUMERICAL SOLUTION
-          </Text>
-          <Text style={[Typography.monoBold, styles.rootValue]}>
-            x* = {rootStr}
-          </Text>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* Solution Hero Box */}
+      <View style={[styles.heroBubble, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.solutionTag, { color: colors.primary }]}>RESULT</Text>
+          <StatusBadge status={result.status} />
         </View>
-        <StatusBadge status={result.status} />
-      </View>
 
-      {/* Status Detail Note */}
-      <View style={styles.statusBox}>
-        <Text style={[Typography.monoSm, styles.statusMessage]}>
+        <Text style={[styles.rootLabel, { color: colors.textSecondary }]}>Root Value (x*)</Text>
+        <Text style={[styles.rootValue, { color: colors.primary }]}>{rootStr}</Text>
+
+        <Text style={[styles.statusMessage, { color: colors.textSecondary }]}>
           {result.statusMessage}
         </Text>
       </View>
@@ -41,38 +37,36 @@ export const RootResults: React.FC<RootResultsProps> = ({ result }) => {
       {/* Metrics Row */}
       <View style={styles.metricsRow}>
         <MetricCard
-          label="ITERATIONS"
+          label="Steps Taken"
           value={result.totalIterations}
-          accentColor={Colors.accentCyan}
+          accentColor={colors.primary}
           style={styles.metricItem}
         />
         <MetricCard
-          label="EXEC TIME"
+          label="Time"
           value={result.executionTimeMs}
           unit="ms"
-          accentColor={Colors.accentViolet}
+          accentColor={colors.secondary}
           style={styles.metricItem}
         />
         <MetricCard
-          label="METHOD"
+          label="Method"
           value={result.method.toUpperCase()}
-          accentColor={Colors.accentTeal}
+          accentColor={colors.accent}
           style={styles.metricItem}
         />
       </View>
 
-      {/* Function and Derivative (if Newton) */}
+      {/* Evaluated Equation */}
       <CodeBlock
-        title="OBJECTIVE FUNCTION"
+        title="Evaluated Formula"
         code={`f(x) = ${result.parsedFunction}`}
-        language="EVAL"
       />
 
       {result.parsedDerivative && (
         <CodeBlock
-          title="FIRST DERIVATIVE"
+          title="Derivative f'(x)"
           code={`f'(x) = ${result.parsedDerivative}`}
-          language="CALCULUS"
         />
       )}
     </View>
@@ -81,48 +75,54 @@ export const RootResults: React.FC<RootResultsProps> = ({ result }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 24,
+    padding: 18,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  heroBubble: {
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  subHeading: {
-    color: Colors.textSecondary,
-    marginBottom: 4,
+  solutionTag: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  rootLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
   },
   rootValue: {
-    color: Colors.accentEmerald,
-    fontSize: 20,
-    letterSpacing: -0.5,
-  },
-  statusBox: {
-    backgroundColor: Colors.surfaceLight,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.borderActive,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 4,
-    marginBottom: 12,
+    fontSize: 26,
+    fontWeight: '900',
+    fontFamily: Typography.mono.fontFamily,
+    marginBottom: 6,
   },
   statusMessage: {
-    color: Colors.textSecondary,
+    fontSize: 12,
     lineHeight: 16,
   },
   metricsRow: {
     flexDirection: 'row',
-    marginBottom: 8,
     gap: 8,
+    marginBottom: 6,
   },
   metricItem: {
     flex: 1,
-    minWidth: 0,
   },
 });

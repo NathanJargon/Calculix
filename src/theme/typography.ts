@@ -20,22 +20,21 @@ export const FontFamily = {
 
 export const Typography: Record<string, TextStyle> = {
   h1: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.sansMedium,
     fontSize: 22,
     fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  h2: {
-    fontFamily: FontFamily.sans,
-    fontSize: 18,
-    fontWeight: '600',
     letterSpacing: -0.3,
   },
+  h2: {
+    fontFamily: FontFamily.sansMedium,
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
   h3: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.sansMedium,
     fontSize: 15,
     fontWeight: '600',
-    letterSpacing: -0.2,
   },
   body: {
     fontFamily: FontFamily.sans,
@@ -52,12 +51,12 @@ export const Typography: Record<string, TextStyle> = {
   mono: {
     fontFamily: FontFamily.mono,
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: '500',
   },
   monoSm: {
     fontFamily: FontFamily.mono,
     fontSize: 11,
-    fontWeight: '400',
+    fontWeight: '500',
   },
   monoBold: {
     fontFamily: FontFamily.mono,
@@ -65,10 +64,9 @@ export const Typography: Record<string, TextStyle> = {
     fontWeight: '700',
   },
   label: {
-    fontFamily: FontFamily.mono,
-    fontSize: 11,
+    fontFamily: FontFamily.sansMedium,
+    fontSize: 12,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.3,
   },
 };

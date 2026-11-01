@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
-import { Typography } from '../../theme/typography';
+import { useTheme } from '../../theme/ThemeContext';
 import { RootFindingInput, RootMethodType } from '../../types/rootFinding';
+import { MathKeypad } from '../common/MathKeypad';
 import { TechButton } from '../common/TechButton';
 import { TechInput } from '../common/TechInput';
 
@@ -31,24 +31,24 @@ interface PresetItem {
 
 const PRESETS: Record<RootMethodType, PresetItem[]> = {
   bisection: [
-    { name: 'Cubic Poly', fn: 'x^3 - x - 2', a: 1, b: 2 },
-    { name: 'Transcendental', fn: 'cos(x) - x', a: 0, b: 1 },
-    { name: 'Exponential', fn: 'e^(-x) - x', a: 0, b: 1 },
+    { name: 'x³ - x - 2', fn: 'x^3 - x - 2', a: 1, b: 2 },
+    { name: 'cos(x) - x', fn: 'cos(x) - x', a: 0, b: 1 },
+    { name: 'e⁻ˣ - x', fn: 'e^(-x) - x', a: 0, b: 1 },
   ],
   newton: [
-    { name: 'Cubic (Root ~2.094)', fn: 'x^3 - 2*x - 5', x0: 2 },
-    { name: 'Cosine Fixed', fn: 'cos(x) - x', x0: 0.5 },
-    { name: 'Square Root 2', fn: 'x^2 - 2', x0: 1 },
+    { name: 'x³ - 2x - 5', fn: 'x^3 - 2*x - 5', x0: 2 },
+    { name: 'cos(x) - x', fn: 'cos(x) - x', x0: 0.5 },
+    { name: 'x² - 2 (√2)', fn: 'x^2 - 2', x0: 1 },
   ],
   secant: [
-    { name: 'Cubic', fn: 'x^3 - 2*x - 5', x0: 1, x1: 2 },
+    { name: 'x³ - 2x - 5', fn: 'x^3 - 2*x - 5', x0: 1, x1: 2 },
     { name: 'Kepler Approx', fn: 'x - 0.2*sin(x) - 0.5', x0: 0, x1: 1 },
-    { name: 'Natural Log', fn: 'log(x) - 1', x0: 2, x1: 3 },
+    { name: 'log(x) - 1', fn: 'log(x) - 1', x0: 2, x1: 3 },
   ],
   'fixed-point': [
-    { name: 'Cubic x=(2x+5)^(1/3)', fn: 'x^3 - 2*x - 5', gFn: '(2*x + 5)^(1/3)', x0: 2 },
-    { name: 'Cosine x=cos(x)', fn: 'cos(x) - x', gFn: 'cos(x)', x0: 0.5 },
-    { name: 'Sqrt x=(x+2/x)/2', fn: 'x^2 - 2', gFn: '(x + 2/x) / 2', x0: 1.5 },
+    { name: 'x³ - 2x - 5', fn: 'x^3 - 2*x - 5', gFn: '(2*x + 5)^(1/3)', x0: 2 },
+    { name: 'x = cos(x)', fn: 'cos(x) - x', gFn: 'cos(x)', x0: 0.5 },
+    { name: 'x = (x+2/x)/2', fn: 'x^2 - 2', gFn: '(x + 2/x) / 2', x0: 1.5 },
   ],
 };
 
@@ -58,6 +58,8 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
   onSolve,
   isSolving,
 }) => {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const { colors } = useTheme();
   const currentPresets = PRESETS[input.method] || [];
 
   const applyPreset = (p: PresetItem) => {
@@ -71,22 +73,31 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
     });
   };
 
+  const handleInsertSymbol = (symbol: string) => {
+    onChange({ functionStr: (input.functionStr || '') + symbol });
+  };
+
+  const handleBackspace = () => {
+    const current = input.functionStr || '';
+    if (current.length > 0) {
+      onChange({ functionStr: current.slice(0, -1) });
+    }
+  };
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Quick Presets Bar */}
-      <View style={styles.presetsSection}>
-        <Text style={[Typography.monoSm, styles.presetHeading]}>PRESETS:</Text>
+      <View style={[styles.presetsSection, { borderBottomColor: colors.borderLight }]}>
+        <Text style={[styles.presetHeading, { color: colors.textSecondary }]}>Examples:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {currentPresets.map((preset, idx) => (
             <TouchableOpacity
               key={idx}
               activeOpacity={0.7}
               onPress={() => applyPreset(preset)}
-              style={styles.presetChip}
+              style={[styles.presetChip, { backgroundColor: colors.primaryLight }]}
             >
-              <Text style={[Typography.monoSm, styles.presetText]}>
-                {preset.name}
-              </Text>
+              <Text style={[styles.presetText, { color: colors.primary }]}>{preset.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -94,7 +105,7 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
 
       {/* Function f(x) */}
       <TechInput
-        label="OBJECTIVE FUNCTION f(x)"
+        label="Equation f(x) = 0"
         prefix="f(x) ="
         placeholder="e.g. x^3 - 2*x - 5"
         value={input.functionStr}
@@ -102,10 +113,17 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
         onClear={() => onChange({ functionStr: '' })}
       />
 
+      {/* Quick Math Symbols Helper */}
+      <MathKeypad
+        onInsert={handleInsertSymbol}
+        onBackspace={handleBackspace}
+        onClear={() => onChange({ functionStr: '' })}
+      />
+
       {/* Fixed Point g(x) */}
       {input.method === 'fixed-point' && (
         <TechInput
-          label="ITERATION FUNCTION g(x) [where x = g(x)]"
+          label="Rearranged Form: x = g(x)"
           prefix="g(x) ="
           placeholder="e.g. (2*x + 5)^(1/3)"
           value={input.gFunctionStr || ''}
@@ -119,7 +137,7 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
         <View style={styles.row}>
           <View style={styles.halfCol}>
             <TechInput
-              label="LOWER BOUND (a)"
+              label="Start interval (a)"
               prefix="a ="
               placeholder="e.g. 1"
               keyboardType="numeric"
@@ -132,7 +150,7 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
           </View>
           <View style={styles.halfCol}>
             <TechInput
-              label="UPPER BOUND (b)"
+              label="End interval (b)"
               prefix="b ="
               placeholder="e.g. 2"
               keyboardType="numeric"
@@ -148,8 +166,8 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
 
       {input.method === 'newton' && (
         <TechInput
-          label="INITIAL GUESS (x0)"
-          prefix="x0 ="
+          label="Initial Guess (x₀)"
+          prefix="x₀ ="
           placeholder="e.g. 2"
           keyboardType="numeric"
           value={input.x0 !== undefined ? String(input.x0) : ''}
@@ -164,8 +182,8 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
         <View style={styles.row}>
           <View style={styles.halfCol}>
             <TechInput
-              label="FIRST GUESS (x0)"
-              prefix="x0 ="
+              label="First Guess (x₀)"
+              prefix="x₀ ="
               placeholder="e.g. 1"
               keyboardType="numeric"
               value={input.x0 !== undefined ? String(input.x0) : ''}
@@ -177,8 +195,8 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
           </View>
           <View style={styles.halfCol}>
             <TechInput
-              label="SECOND GUESS (x1)"
-              prefix="x1 ="
+              label="Second Guess (x₁)"
+              prefix="x₁ ="
               placeholder="e.g. 2"
               keyboardType="numeric"
               value={input.x1 !== undefined ? String(input.x1) : ''}
@@ -193,8 +211,8 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
 
       {input.method === 'fixed-point' && (
         <TechInput
-          label="INITIAL GUESS (x0)"
-          prefix="x0 ="
+          label="Initial Guess (x₀)"
+          prefix="x₀ ="
           placeholder="e.g. 1.5"
           keyboardType="numeric"
           value={input.x0 !== undefined ? String(input.x0) : ''}
@@ -205,44 +223,57 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
         />
       )}
 
-      {/* Tolerance & Max Iterations */}
-      <View style={styles.row}>
-        <View style={styles.halfCol}>
-          <TechInput
-            label="ERROR TOLERANCE (ε)"
-            prefix="ε ="
-            placeholder="1e-6"
-            value={String(input.tolerance)}
-            onChangeText={(text) => {
-              const val = parseFloat(text);
-              if (!Number.isNaN(val) && val > 0) {
-                onChange({ tolerance: val });
-              }
-            }}
-          />
-        </View>
-        <View style={styles.halfCol}>
-          <TechInput
-            label="MAX ITERATIONS"
-            prefix="N ="
-            placeholder="50"
-            keyboardType="number-pad"
-            value={String(input.maxIterations)}
-            onChangeText={(text) => {
-              const val = parseInt(text, 10);
-              if (!Number.isNaN(val) && val > 0) {
-                onChange({ maxIterations: val });
-              }
-            }}
-          />
-        </View>
-      </View>
+      {/* Collapsible Advanced Settings */}
+      <TouchableOpacity
+        style={styles.advancedToggle}
+        onPress={() => setShowAdvanced(!showAdvanced)}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.advancedToggleText, { color: colors.secondary }]}>
+          {showAdvanced ? '▾ Hide Settings' : '▸ Advanced Settings (Accuracy & Iterations)'}
+        </Text>
+      </TouchableOpacity>
 
-      {/* Compute Button */}
+      {showAdvanced && (
+        <View style={[styles.advancedContainer, { backgroundColor: colors.surfaceSecondary }]}>
+          <View style={styles.row}>
+            <View style={styles.halfCol}>
+              <TechInput
+                label="Accuracy Goal"
+                prefix="ε ="
+                placeholder="1e-6"
+                value={String(input.tolerance)}
+                onChangeText={(text) => {
+                  const val = parseFloat(text);
+                  if (!Number.isNaN(val) && val > 0) {
+                    onChange({ tolerance: val });
+                  }
+                }}
+              />
+            </View>
+            <View style={styles.halfCol}>
+              <TechInput
+                label="Max Steps"
+                prefix="N ="
+                placeholder="50"
+                keyboardType="number-pad"
+                value={String(input.maxIterations)}
+                onChangeText={(text) => {
+                  const val = parseInt(text, 10);
+                  if (!Number.isNaN(val) && val > 0) {
+                    onChange({ maxIterations: val });
+                  }
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Calculate Root Button */}
       <TechButton
-        label={isSolving ? 'COMPUTING ROOT...' : 'EXECUTE ALGORITHM'}
+        label={isSolving ? 'Calculating Root...' : 'Find Root'}
         variant="primary"
-        icon="▶"
         onPress={onSolve}
         disabled={isSolving || !input.functionStr.trim()}
         style={styles.solveBtn}
@@ -253,12 +284,15 @@ export const RootInputForm: React.FC<RootInputFormProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 14,
+    borderRadius: 24,
+    padding: 18,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   presetsSection: {
     flexDirection: 'row',
@@ -266,24 +300,21 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   presetHeading: {
-    color: Colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
     marginRight: 8,
   },
   presetChip: {
-    backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.border,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
   },
   presetText: {
-    color: Colors.accentCyan,
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '700',
   },
   row: {
     flexDirection: 'row',
@@ -292,7 +323,21 @@ const styles = StyleSheet.create({
   halfCol: {
     flex: 0.485,
   },
+  advancedToggle: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  advancedToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  advancedContainer: {
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
   solveBtn: {
-    marginTop: 6,
+    marginTop: 8,
   },
 });

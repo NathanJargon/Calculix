@@ -7,8 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
-import { Typography } from '../../theme/typography';
+import { useTheme } from '../../theme/ThemeContext';
 
 export interface TabOption<T extends string> {
   id: T;
@@ -29,6 +28,8 @@ export function TabSelector<T extends string>({
   onSelect,
   style,
 }: TabSelectorProps<T>) {
+  const { colors } = useTheme();
+
   return (
     <View style={[styles.wrapper, style]}>
       <ScrollView
@@ -41,34 +42,39 @@ export function TabSelector<T extends string>({
           return (
             <TouchableOpacity
               key={opt.id}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
               onPress={() => onSelect(opt.id)}
               style={[
                 styles.tab,
-                isSelected ? styles.tabSelected : styles.tabUnselected,
+                isSelected
+                  ? [styles.tabSelected, { backgroundColor: colors.primary, borderColor: colors.primary }]
+                  : [styles.tabUnselected, { backgroundColor: colors.surface, borderColor: colors.border }],
               ]}
             >
               <Text
                 style={[
-                  Typography.monoSm,
-                  styles.tabText,
-                  isSelected ? styles.textSelected : styles.textUnselected,
+                  styles.tabLabel,
+                  isSelected ? styles.tabLabelSelected : { color: colors.textSecondary },
                 ]}
               >
                 {opt.label}
               </Text>
+
               {opt.badge && (
                 <View
                   style={[
                     styles.badge,
-                    isSelected ? styles.badgeSelected : styles.badgeUnselected,
+                    isSelected
+                      ? styles.badgeSelected
+                      : [styles.badgeUnselected, { backgroundColor: colors.surfaceSecondary }],
                   ]}
                 >
                   <Text
                     style={[
-                      Typography.monoSm,
                       styles.badgeText,
-                      isSelected ? styles.badgeTextSelected : null,
+                      isSelected
+                        ? styles.badgeTextSelected
+                        : { color: colors.textMuted },
                     ]}
                   >
                     {opt.badge}
@@ -85,61 +91,52 @@ export function TabSelector<T extends string>({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 14,
+    marginVertical: 10,
   },
   container: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 3,
-  },
-  tab: {
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 5,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 2,
+    gap: 8,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    borderWidth: 1,
   },
   tabSelected: {
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.borderActive,
+    shadowColor: '#FF2E93',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  tabUnselected: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: 'transparent',
+  tabUnselected: {},
+  tabLabel: {
+    fontSize: 13,
+    fontWeight: '700',
   },
-  tabText: {
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  textSelected: {
-    color: Colors.accentCyan,
-  },
-  textUnselected: {
-    color: Colors.textSecondary,
+  tabLabelSelected: {
+    color: '#FFFFFF',
   },
   badge: {
     marginLeft: 6,
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 1,
-    borderRadius: 3,
+    borderRadius: 10,
   },
   badgeSelected: {
-    backgroundColor: '#0284C740',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
-  badgeUnselected: {
-    backgroundColor: Colors.surfaceLight,
-  },
+  badgeUnselected: {},
   badgeText: {
-    fontSize: 9,
-    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
   },
   badgeTextSelected: {
-    color: Colors.accentCyan,
+    color: '#FFFFFF',
   },
 });

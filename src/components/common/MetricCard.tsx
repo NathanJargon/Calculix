@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { Colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 
 interface MetricCardProps {
@@ -17,39 +17,41 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   value,
   unit,
   subtext,
-  accentColor = Colors.accentCyan,
+  accentColor,
   style,
 }) => {
+  const { colors } = useTheme();
+  const highlightColor = accentColor || colors.primary;
+
   return (
-    <View style={[styles.card, style]}>
-      <Text style={[Typography.label, styles.label]}>{label}</Text>
+    <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }, style]}>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
       <View style={styles.valueRow}>
         <Text
-          style={[Typography.monoBold, styles.value, { color: accentColor }]}
+          style={[Typography.monoBold, styles.value, { color: highlightColor }]}
           numberOfLines={1}
           adjustsFontSizeToFit
         >
           {value}
         </Text>
-        {unit && <Text style={[Typography.monoSm, styles.unit]}>{unit}</Text>}
+        {unit && <Text style={[styles.unit, { color: colors.textMuted }]}>{unit}</Text>}
       </View>
-      {subtext && <Text style={[Typography.bodySm, styles.subtext]}>{subtext}</Text>}
+      {subtext && <Text style={[styles.subtext, { color: colors.textMuted }]}>{subtext}</Text>}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 16,
     padding: 12,
     flex: 1,
-    minWidth: 100,
+    minWidth: 90,
   },
   label: {
-    color: Colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '700',
     marginBottom: 4,
   },
   valueRow: {
@@ -57,16 +59,16 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   value: {
-    fontSize: 16,
-    letterSpacing: -0.3,
+    fontSize: 18,
+    fontWeight: '900',
   },
   unit: {
-    color: Colors.textMuted,
-    marginLeft: 4,
+    fontSize: 11,
+    marginLeft: 3,
+    fontWeight: '600',
   },
   subtext: {
-    color: Colors.textMuted,
-    marginTop: 4,
     fontSize: 11,
+    marginTop: 2,
   },
 });
