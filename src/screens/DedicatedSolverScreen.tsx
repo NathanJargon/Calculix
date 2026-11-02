@@ -11,6 +11,8 @@ import {
 import { MathKeypad } from '../components/common/MathKeypad';
 import { TechButton } from '../components/common/TechButton';
 import { TechInput } from '../components/common/TechInput';
+import { FunctionPlotter } from '../components/common/FunctionPlotter';
+import { StepExplanationCards } from '../components/common/StepExplanationCards';
 import { IterationTable } from '../components/rootFinding/IterationTable';
 import { RootResults } from '../components/rootFinding/RootResults';
 import { solveRoot } from '../math/rootFinding';
@@ -417,8 +419,21 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
           />
         </View>
 
+        {/* Interactive Visual Graph */}
+        <FunctionPlotter
+          functionStr={input.functionStr}
+          root={result?.root}
+          a={input.a}
+          b={input.b}
+        />
+
         {/* Results Overview */}
         {result && <RootResults result={result} />}
+
+        {/* Natural Step-by-Step Explanation Cards */}
+        {result && result.iterations.length > 0 && (
+          <StepExplanationCards method={result.method} iterations={result.iterations} />
+        )}
 
         {/* Iteration Table */}
         {result && result.iterations.length > 0 && (

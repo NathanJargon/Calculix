@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Modal,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -170,7 +171,7 @@ const LeftDrawerModal: React.FC<{
 };
 
 export const RootNavigator: React.FC = () => {
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [activeSolver, setActiveSolver] = useState<SolverId | null>(null);
@@ -178,8 +179,37 @@ export const RootNavigator: React.FC = () => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
+  useEffect(() => {
+    // Check if introduction was previously completed
+    AsyncStorage.getItem('has_seen_intro')
+      .then((val) => {
+        if (val === 'true') {
+          setShowIntro(false);
+        } else {
+          setShowIntro(true);
+        }
+      })
+      .catch(() => {
+        setShowIntro(false);
+      });
+  }, []);
+
+  const handleFinishIntro = async () => {
+    try {
+      await AsyncStorage.setItem('has_seen_intro', 'true');
+    } catch {
+      // Ignore
+    }
+    setShowIntro(false);
+  };
+
+  if (showIntro === null) {
+    // Initializing async state
+    return <View style={[styles.appWrapper, { backgroundColor: colors.background }]} />;
+  }
+
   if (showIntro) {
-    return <IntroScreen onFinish={() => setShowIntro(false)} />;
+    return <IntroScreen onFinish={handleFinishIntro} />;
   }
 
   // If a specific solver is selected from the grid, show its dedicated screen

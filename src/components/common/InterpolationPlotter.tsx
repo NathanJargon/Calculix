@@ -1,0 +1,227 @@
+import React, { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
+import { useTheme } from '../../theme/ThemeContext';
+import { DataPoint } from '../../types/interpolation';
+
+interface InterpolationPlotterProps {
+  points: DataPoint[];
+  targetX: number;
+  interpolatedY?: number | null;
+  title?: string;
+}
+
+export const InterpolationPlotter: React.FC<InterpolationPlotterProps> = ({
+  points,
+  targetX,
+  interpolatedY,
+  title = 'Fitted Interpolation Curve',
+}) => {
+  const { colors } = useTheme();
+  const [plotWidth, setPlotWidth] = useState(300);
+  const plotHeight = 180;
+
+  if (points.length < 2) return null;
+
+  // Domain range
+  const allX = points.map((p) => p.x).concat(targetX);
+  const allY = points.map((p) => p.y);
+  if (interpolatedY !== undefined && interpolatedY !== null && !isNaN(interpolatedY)) {
+    allY.push(interpolatedY);
+  }
+
+  const minX = Math.min(...allX);
+  const maxX = Math.max(...allX);
+  const minY = Math.min(...allY);
+  const maxY = Math.max(...allY);
+
+  const padX = (maxX - minX) * 0.15 || 1;
+  const padY = (maxY - minY) * 0.15 || 1;
+
+  const plotMinX = minX - padX;
+  const plotMaxX = maxX + padX;
+  const plotMinY = minY - padY;
+  const plotMaxY = maxY + padY;
+
+  const toSvgX = (x: number) => {
+    return ((x - plotMinX) / (plotMaxX - plotMinX)) * plotWidth;
+  };
+
+  const toSvgY = (y: number) => {
+    return plotHeight - ((y - plotMinY) / (plotMaxY - plotMinY)) * plotHeight;
+  };
+
+  // Connect points with a smooth curve or polyline
+  const sortedPoints = [...points].sort((a, b) => a.x - b.x);
+  let pathD = '';
+  sortedPoints.forEach((pt, idx) => {
+    const sx = toSvgX(pt.x);
+    const sy = toSvgY(pt.y);
+    if (idx === 0) {
+      pathD += `M ${sx} ${sy}`;
+    } else {
+      pathD += ` L ${sx} ${sy}`;
+    }
+  });
+
+  const targetSvgX = toSvgX(targetX);
+  const targetSvgY = interpolatedY !== undefined && interpolatedY !== null ? toSvgY(interpolatedY) : null;
+
+  return (
+    <View
+      style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      onLayout={(e) => setPlotWidth(e.nativeEvent.layout.width - 32)}
+    >
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+        <View style={[styles.badge, { backgroundColor: colors.secondaryLight }]}>
+          <Text style={[styles.badgeText, { color: colors.secondary }]}>Curve Fit</Text>
+        </View>
+      </View>
+
+      <View style={[styles.plotBox, { backgroundColor: colors.surfaceSecondary }]}>
+        <Svg width={plotWidth} height={plotHeight}>
+          {/* Target X vertical guideline */}
+          <Line
+            x1={targetSvgX}
+            y1={0}
+            x2={targetSvgX}
+            y2={plotHeight}
+            stroke={colors.accent}
+            strokeWidth={1.5}
+            strokeDasharray="3,3"
+          />
+
+          {/* Interpolation connected curve */}
+          {pathD ? (
+            <Path
+              d={pathD}
+              fill="none"
+              stroke={colors.secondary}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : null}
+
+          {/* Data Points */}
+          {sortedPoints.map((pt) => {
+            const sx = toSvgX(pt.x);
+            const sy = toSvgY(pt.y);
+            return (
+              <Circle
+                key={pt.id}
+                cx={sx}
+                cy={sy}
+                r={5.5}
+                fill={colors.secondary}
+                stroke="#FFFFFF"
+                strokeWidth={2}
+              />
+            );
+          })}
+
+          {/* Target Evaluated Point */}
+          {targetSvgY !== null && (
+            <>
+              <Circle
+                cx={targetSvgX}
+                cy={targetSvgY}
+                r={7}
+                fill={colors.accent}
+              />
+              <Circle
+                cx={targetSvgX}
+                cy={targetSvgY}
+                r={3}
+                fill="#FFFFFF"
+              />
+              <SvgText
+                x={Math.min(plotWidth - 65, Math.max(10, targetSvgX + 10))}
+                y={Math.max(16, targetSvgY - 8)}
+                fill={colors.accent}
+                fontSize={11}
+                fontWeight="bold"
+              >
+                ({targetX}, {interpolatedY?.toFixed(2)})
+              </SvgText>
+            </>
+          )}
+        </Svg>
+      </View>
+
+      <View style={styles.footerRow}>
+        <View style={styles.legendGroup}>
+          <View style={[styles.legendDot, { backgroundColor: colors.secondary }]} />
+          <Text style={[styles.legendText, { color: colors.textSecondary }]}>Data Nodes ({points.length})</Text>
+        </View>
+        {interpolatedY !== undefined && interpolatedY !== null && (
+          <View style={styles.legendGroup}>
+            <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>Target x*</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  plotBox: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  legendGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+});

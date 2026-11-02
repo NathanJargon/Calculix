@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { DividedDiffTable } from '../components/interpolation/DividedDiffTable';
+import { InterpolationPlotter } from '../components/common/InterpolationPlotter';
 import { InterpolationResults } from '../components/interpolation/InterpolationResults';
 import { LagrangeBasisTable } from '../components/interpolation/LagrangeBasisTable';
 import { PointListEditor } from '../components/interpolation/PointListEditor';
@@ -150,6 +151,13 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
           onTargetXChange={setTargetX}
           onSolve={handleSolve}
           isSolving={isSolving}
+        />
+
+        {/* Visual Graph Plotter */}
+        <InterpolationPlotter
+          points={points}
+          targetX={targetX}
+          interpolatedY={result?.interpolatedY}
         />
 
         {/* Results Card */}

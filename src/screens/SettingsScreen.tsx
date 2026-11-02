@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Switch,
@@ -7,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme/ThemeContext';
 
 export const SettingsScreen: React.FC = () => {
@@ -50,6 +52,27 @@ export const SettingsScreen: React.FC = () => {
             trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={isDark ? '#FFFFFF' : '#FFFFFF'}
           />
+        </View>
+
+        <View style={[styles.settingRow, { borderTopWidth: 1, borderTopColor: colors.borderLight }]}>
+          <View style={styles.settingTextGroup}>
+            <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+              Replay Onboarding Tour
+            </Text>
+            <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>
+              Reset intro screens to show on next app launch
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.resetTourBtn, { backgroundColor: colors.primaryLight }]}
+            onPress={async () => {
+              await AsyncStorage.removeItem('has_seen_intro');
+              Alert.alert('Tour Reset', 'The intro tour will show again the next time the app opens.');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.resetTourText, { color: colors.primary }]}>Reset</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -186,6 +209,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     lineHeight: 16,
+  },
+  resetTourBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  resetTourText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   methodRow: {
     flexDirection: 'row',
