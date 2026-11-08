@@ -11,6 +11,7 @@ function MainApp(): React.JSX.Element {
     <>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
       />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         <RootNavigator />

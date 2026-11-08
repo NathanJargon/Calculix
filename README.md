@@ -7,6 +7,7 @@
 **A high-precision, beautifully designed numerical analysis and curve plotting mobile toolkit.**  
 Built with **bare React Native CLI (TypeScript)**, featuring interactive SVG function plotting, natural-language solution walkthroughs, persistent onboarding, and a clean pastel/obsidian design system.
 
+[![Version](https://img.shields.io/badge/Release-v1.0.1%20(v2)-success)](https://github.com/your-username/calculix/releases)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.88.1-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
 [![Jest](https://img.shields.io/badge/Tests-14%20Passing-C21325?logo=jest&logoColor=white)](https://jestjs.io/)

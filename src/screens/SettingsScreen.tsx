@@ -115,7 +115,7 @@ export const SettingsScreen: React.FC = () => {
         </View>
         <View style={[styles.infoRow, styles.rowBorder, { borderBottomColor: colors.borderLight }]}>
           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Version</Text>
-          <Text style={[styles.infoValue, { color: colors.textPrimary }]}>1.0.0 (Release)</Text>
+          <Text style={[styles.infoValue, { color: colors.textPrimary }]}>1.0.1 (Release)</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Math Core</Text>
