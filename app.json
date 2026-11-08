@@ -1,4 +1,7 @@
 {
   "name": "Calculix",
-  "displayName": "Calculix"
+  "displayName": "Calculix",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-2584584826310566~9459752617"
+  }
 }

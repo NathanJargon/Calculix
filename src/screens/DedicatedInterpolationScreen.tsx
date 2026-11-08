@@ -14,6 +14,7 @@ import { InterpolationResults } from '../components/interpolation/InterpolationR
 import { LagrangeBasisTable } from '../components/interpolation/LagrangeBasisTable';
 import { PointListEditor } from '../components/interpolation/PointListEditor';
 import { solveInterpolation } from '../math/interpolation';
+import { onCalculationCompleted } from '../services/adService';
 import { useTheme } from '../theme/ThemeContext';
 import {
   DataPoint,
@@ -88,8 +89,12 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
         points,
         targetX,
       };
-      setResult(solveInterpolation(input));
+      const res = solveInterpolation(input);
+      setResult(res);
       setIsSolving(false);
+      if (res.interpolatedY !== null) {
+        onCalculationCompleted();
+      }
     }, 16);
   };
 

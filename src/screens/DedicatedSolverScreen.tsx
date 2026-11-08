@@ -16,6 +16,7 @@ import { StepExplanationCards } from '../components/common/StepExplanationCards'
 import { IterationTable } from '../components/rootFinding/IterationTable';
 import { RootResults } from '../components/rootFinding/RootResults';
 import { solveRoot } from '../math/rootFinding';
+import { onCalculationCompleted } from '../services/adService';
 import { useTheme } from '../theme/ThemeContext';
 import {
   RootFindingInput,
@@ -153,6 +154,9 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
       const res = solveRoot(input);
       setResult(res);
       setIsSolving(false);
+      if (res.root !== null) {
+        onCalculationCompleted();
+      }
     }, 16);
   };
 

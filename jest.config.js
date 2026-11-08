@@ -1,7 +1,7 @@
 module.exports = {
   preset: '@react-native/jest-preset',
   transformIgnorePatterns: [
-    'node_modules/(?!(@react-native|react-native|@react-navigation|@react-native-async-storage|react-native-svg|mathjs)/)',
+    'node_modules/(?!(@react-native|react-native|@react-navigation|@react-native-async-storage|react-native-svg|mathjs|react-native-google-mobile-ads)/)',
   ],
   setupFiles: [
     './node_modules/react-native-gesture-handler/jestSetup.js',

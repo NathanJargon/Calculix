@@ -12,6 +12,11 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
+      <!-- Google AdMob Application ID -->
+      <meta-data
+        android:name="com.google.android.gms.ads.APPLICATION_ID"
+        android:value="ca-app-pub-2584584826310566~9459752617"/>
+
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
