@@ -17,6 +17,8 @@ import { IterationTable } from '../components/rootFinding/IterationTable';
 import { RootResults } from '../components/rootFinding/RootResults';
 import { solveRoot } from '../math/rootFinding';
 import { onCalculationCompleted } from '../services/adService';
+import { saveCalculationToHistory } from '../services/historyService';
+import { formatFloat } from '../math/evaluator';
 import { useTheme } from '../theme/ThemeContext';
 import {
   RootFindingInput,
@@ -176,6 +178,24 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
       if (res.root !== null) {
         onCalculationCompleted();
       }
+      saveCalculationToHistory({
+        type: 'root',
+        method,
+        methodTitle: cfg.title,
+        expressionSummary: `f(x) = ${functionStr}`,
+        resultSummary:
+          res.root !== null ? `x* = ${formatFloat(res.root, 6)}` : `Status: ${res.status}`,
+        rootParams: {
+          functionStr,
+          a: Number.isNaN(parsedA) ? undefined : parsedA,
+          b: Number.isNaN(parsedB) ? undefined : parsedB,
+          x0: Number.isNaN(parsedX0) ? undefined : parsedX0,
+          x1: Number.isNaN(parsedX1) ? undefined : parsedX1,
+          gFunctionStr: gFunctionStr.trim() || undefined,
+          tolerance: Number.isNaN(parsedTol) || parsedTol <= 0 ? 1e-6 : parsedTol,
+          maxIterations: Number.isNaN(parsedMax) || parsedMax <= 0 ? 50 : Math.min(parsedMax, 1000),
+        },
+      });
     }, 16);
   };
 

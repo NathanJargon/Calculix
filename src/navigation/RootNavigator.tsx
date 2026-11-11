@@ -17,6 +17,8 @@ import { DedicatedSolverScreen } from '../screens/DedicatedSolverScreen';
 import { DedicatedInterpolationScreen } from '../screens/DedicatedInterpolationScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { TheoryGuideModal } from '../screens/TheoryGuideModal';
+import { HistoryModal } from '../screens/HistoryModal';
+import { HistoryItem } from '../services/historyService';
 import { IntroScreen } from '../screens/intro/IntroScreen';
 import { LoadingSplash } from '../components/common/LoadingSplash';
 import { useTheme } from '../theme/ThemeContext';
@@ -75,8 +77,9 @@ const LeftDrawerModal: React.FC<{
   visible: boolean;
   onClose: () => void;
   onOpenGuide: () => void;
+  onOpenHistory: () => void;
   onNavigateSettings: () => void;
-}> = ({ visible, onClose, onOpenGuide, onNavigateSettings }) => {
+}> = ({ visible, onClose, onOpenGuide, onOpenHistory, onNavigateSettings }) => {
   const { colors, isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
   const panelWidth = Math.min(width * 0.78, 320);
@@ -125,6 +128,27 @@ const LeftDrawerModal: React.FC<{
                   </Text>
                   <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
                     Formulas & convergence
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  onClose();
+                  onOpenHistory();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.drawerItemIconBox, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.drawerItemIcon, { color: colors.primary }]}>≡</Text>
+                </View>
+                <View style={styles.drawerItemTextGroup}>
+                  <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
+                    History
+                  </Text>
+                  <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
+                    Recent calculations
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -186,6 +210,7 @@ export const RootNavigator: React.FC = () => {
   const [showIntro, setShowIntro] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [activeSolver, setActiveSolver] = useState<SolverId | null>(null);
 
   const { colors } = useTheme();
@@ -221,12 +246,16 @@ export const RootNavigator: React.FC = () => {
         setGuideOpen(false);
         return true;
       }
+      if (historyOpen) {
+        setHistoryOpen(false);
+        return true;
+      }
       return false;
     };
 
     const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSub.remove();
-  }, [activeSolver, menuOpen, guideOpen]);
+  }, [activeSolver, menuOpen, guideOpen, historyOpen]);
 
   const handleFinishIntro = async () => {
     try {
@@ -271,6 +300,14 @@ export const RootNavigator: React.FC = () => {
         )}
 
         <TheoryGuideModal visible={guideOpen} onClose={() => setGuideOpen(false)} />
+
+        <HistoryModal
+          visible={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onSelectItem={(_item: HistoryItem) => {
+            setHistoryOpen(false);
+          }}
+        />
       </View>
     );
   }
@@ -338,6 +375,7 @@ export const RootNavigator: React.FC = () => {
           visible={menuOpen}
           onClose={() => setMenuOpen(false)}
           onOpenGuide={() => setGuideOpen(true)}
+          onOpenHistory={() => setHistoryOpen(true)}
           onNavigateSettings={() => {
             if (navigationRef.isReady()) {
               navigationRef.navigate('Settings');
@@ -347,6 +385,15 @@ export const RootNavigator: React.FC = () => {
 
         {/* Formula Guide Modal */}
         <TheoryGuideModal visible={guideOpen} onClose={() => setGuideOpen(false)} />
+
+        {/* Calculation History Modal */}
+        <HistoryModal
+          visible={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onSelectItem={(_item: HistoryItem) => {
+            setHistoryOpen(false);
+          }}
+        />
       </View>
     </NavigationContainer>
   );

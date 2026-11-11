@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  Alert,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -74,6 +76,8 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 }) => {
   const { colors } = useTheme();
   const [targetXInput, setTargetXInput] = useState(String(targetX));
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [csvText, setCsvText] = useState('');
 
   const addPoint = () => {
     const lastX = points.length > 0 && !Number.isNaN(points[points.length - 1].x)
@@ -124,6 +128,85 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* CSV Paste Modal */}
+      <Modal
+        visible={csvModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCsvModalOpen(false)}
+      >
+        <View style={styles.csvOverlay}>
+          <View
+            style={[styles.csvSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Text style={[styles.csvTitle, { color: colors.textPrimary }]}>
+              Paste Coordinate Data
+            </Text>
+            <Text style={[styles.csvSubtitle, { color: colors.textSecondary }]}>
+              One pair per line, comma or tab separated.{'\n'}Example: 1, 2.5
+            </Text>
+            <TextInput
+              style={[
+                styles.csvInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.textPrimary,
+                },
+              ]}
+              multiline
+              placeholder={'1, 2.5\n2, 4.1\n3, 8.9'}
+              placeholderTextColor={colors.textMuted}
+              value={csvText}
+              onChangeText={setCsvText}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.csvBtnRow}>
+              <TouchableOpacity
+                style={[styles.csvBtn, { backgroundColor: colors.surfaceSecondary }]}
+                onPress={() => {
+                  setCsvModalOpen(false);
+                  setCsvText('');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.csvBtnText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.csvBtn, { backgroundColor: colors.primary }]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  const lines = csvText
+                    .split('\n')
+                    .map((l) => l.trim())
+                    .filter(Boolean);
+                  const parsed = lines
+                    .map((line) => line.split(/[,\t;]+/).map(Number))
+                    .filter((pair) => pair.length >= 2 && pair.every((v) => !Number.isNaN(v)));
+                  if (parsed.length < 2) {
+                    Alert.alert('Invalid Data', 'Enter at least 2 valid coordinate pairs.');
+                    return;
+                  }
+                  const newPoints: DataPoint[] = parsed.map(([x, y], i) => ({
+                    id: `csv-${Date.now()}-${i}`,
+                    x,
+                    y,
+                    rawX: String(x),
+                    rawY: String(y),
+                  }));
+                  onPointsChange(newPoints);
+                  setCsvModalOpen(false);
+                  setCsvText('');
+                }}
+              >
+                <Text style={[styles.csvBtnText, styles.csvBtnTextWhite]}>Parse Data</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Presets Header */}
       <View style={[styles.presetSection, { borderBottomColor: colors.borderLight }]}>
         <Text style={[styles.presetHeading, { color: colors.textSecondary }]}>Examples:</Text>
@@ -162,16 +245,25 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
         <Text style={[styles.pointsTitle, { color: colors.textPrimary }]}>
           Known Data Points ({points.length})
         </Text>
-        <TouchableOpacity
-          onPress={addPoint}
-          activeOpacity={0.7}
-          accessibilityLabel="Add data point"
-          accessibilityRole="button"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={[styles.addBtn, { backgroundColor: colors.secondaryLight }]}
-        >
-          <Text style={[styles.addBtnText, { color: colors.secondary }]}>+ Add Point</Text>
-        </TouchableOpacity>
+        <View style={styles.pointsHeaderActions}>
+          <TouchableOpacity
+            onPress={() => setCsvModalOpen(true)}
+            activeOpacity={0.7}
+            style={[styles.addBtn, styles.csvTriggerBtn, { backgroundColor: colors.accentLight }]}
+          >
+            <Text style={[styles.addBtnText, { color: colors.accent }]}>Paste CSV</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={addPoint}
+            activeOpacity={0.7}
+            accessibilityLabel="Add data point"
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[styles.addBtn, { backgroundColor: colors.secondaryLight }]}
+          >
+            <Text style={[styles.addBtnText, { color: colors.secondary }]}>+ Add Point</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Column labels */}
@@ -282,6 +374,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
   },
+  pointsHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   pointsTitle: {
     fontSize: 13,
     fontWeight: '800',
@@ -355,5 +451,64 @@ const styles = StyleSheet.create({
   },
   solveBtn: {
     marginTop: 14,
+  },
+  csvOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  csvSheet: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    width: '100%',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  csvTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  csvSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  csvInput: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    minHeight: 120,
+    textAlignVertical: 'top',
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: 'monospace',
+  },
+  csvBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  csvBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  csvBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  csvBtnTextWhite: {
+    color: '#FFFFFF',
+  },
+  csvTriggerBtn: {
+    marginRight: 6,
   },
 });

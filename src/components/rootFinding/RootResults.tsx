@@ -1,6 +1,11 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { formatFloat } from '../../math/evaluator';
+import {
+  formatRootResultAsLatex,
+  formatRootResultAsMarkdown,
+  shareSolutionText,
+} from '../../services/exportService';
 import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 import { RootFindingResult } from '../../types/rootFinding';
@@ -16,6 +21,7 @@ export const RootResults: React.FC<RootResultsProps> = ({ result }) => {
   const { colors } = useTheme();
   const rootStr =
     result.root !== null ? formatFloat(result.root, 6) : 'N/A';
+  const [sharing, setSharing] = useState(false);
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -32,6 +38,36 @@ export const RootResults: React.FC<RootResultsProps> = ({ result }) => {
         <Text style={[styles.statusMessage, { color: colors.textSecondary }]}>
           {result.statusMessage}
         </Text>
+
+        {/* Export Action Row */}
+        <View style={styles.exportRow}>
+          <TouchableOpacity
+            style={[styles.exportPill, { backgroundColor: colors.secondaryLight }]}
+            activeOpacity={0.75}
+            disabled={sharing}
+            onPress={async () => {
+              setSharing(true);
+              await shareSolutionText('Calculix Solution', formatRootResultAsMarkdown(result));
+              setSharing(false);
+            }}
+          >
+            <Text style={[styles.exportPillText, { color: colors.secondary }]}>
+              Share Markdown
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.exportPill, { backgroundColor: colors.accentLight }]}
+            activeOpacity={0.75}
+            disabled={sharing}
+            onPress={async () => {
+              setSharing(true);
+              await shareSolutionText('Calculix Solution (LaTeX)', formatRootResultAsLatex(result));
+              setSharing(false);
+            }}
+          >
+            <Text style={[styles.exportPillText, { color: colors.accent }]}>Share LaTeX</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Metrics Row */}
@@ -124,5 +160,23 @@ const styles = StyleSheet.create({
   },
   metricItem: {
     flex: 1,
+  },
+  exportRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  exportPill: {
+    flex: 1,
+    minHeight: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  exportPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 });

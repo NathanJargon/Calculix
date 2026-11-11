@@ -1,6 +1,10 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { formatFloat } from '../../math/evaluator';
+import {
+  formatInterpolationResultAsMarkdown,
+  shareSolutionText,
+} from '../../services/exportService';
 import { useTheme } from '../../theme/ThemeContext';
 import { Typography } from '../../theme/typography';
 import { InterpolationResult } from '../../types/interpolation';
@@ -16,6 +20,7 @@ export const InterpolationResults: React.FC<InterpolationResultsProps> = ({
   result,
 }) => {
   const { colors } = useTheme();
+  const [sharing, setSharing] = useState(false);
   const yValStr =
     result.interpolatedY !== null ? formatFloat(result.interpolatedY, 6) : 'N/A';
   const degree = result.points.length > 0 ? result.points.length - 1 : 0;
@@ -37,6 +42,25 @@ export const InterpolationResults: React.FC<InterpolationResultsProps> = ({
         {result.errorMessage && (
           <Text style={[styles.errorText, { color: colors.error }]}>{result.errorMessage}</Text>
         )}
+
+        {/* Export Action Row */}
+        <View style={styles.exportRow}>
+          <TouchableOpacity
+            style={[styles.exportPill, { backgroundColor: colors.primaryLight }]}
+            activeOpacity={0.75}
+            disabled={sharing}
+            onPress={async () => {
+              setSharing(true);
+              await shareSolutionText(
+                'Calculix Interpolation',
+                formatInterpolationResultAsMarkdown(result)
+              );
+              setSharing(false);
+            }}
+          >
+            <Text style={[styles.exportPillText, { color: colors.primary }]}>Share Results</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Metrics Row */}
@@ -125,5 +149,20 @@ const styles = StyleSheet.create({
   },
   metricItem: {
     flex: 1,
+  },
+  exportRow: {
+    marginTop: 10,
+  },
+  exportPill: {
+    minHeight: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  exportPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 });

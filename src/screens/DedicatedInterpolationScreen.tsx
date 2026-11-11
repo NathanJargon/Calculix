@@ -15,6 +15,8 @@ import { LagrangeBasisTable } from '../components/interpolation/LagrangeBasisTab
 import { PointListEditor } from '../components/interpolation/PointListEditor';
 import { solveInterpolation } from '../math/interpolation';
 import { onCalculationCompleted } from '../services/adService';
+import { saveCalculationToHistory } from '../services/historyService';
+import { formatFloat } from '../math/evaluator';
 import { useTheme } from '../theme/ThemeContext';
 import {
   DataPoint,
@@ -95,6 +97,17 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
       if (res.interpolatedY !== null) {
         onCalculationCompleted();
       }
+      saveCalculationToHistory({
+        type: 'interpolation',
+        method,
+        methodTitle: cfg.title,
+        expressionSummary: `${points.length} pts, x* = ${targetX}`,
+        resultSummary:
+          res.interpolatedY !== null
+            ? `P(${targetX}) = ${formatFloat(res.interpolatedY, 6)}`
+            : 'Error',
+        interpolationParams: { points, targetX },
+      });
     }, 16);
   };
 
