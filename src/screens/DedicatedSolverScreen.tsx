@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -25,6 +25,7 @@ import {
   RootFindingResult,
   RootMethodType,
 } from '../types/rootFinding';
+import { SolverId } from './HomeScreen';
 
 const METHOD_CONFIG: Record<
   RootMethodType,
@@ -108,16 +109,27 @@ const METHOD_CONFIG: Record<
   },
 };
 
+export const ALL_SOLVER_METHODS: { id: SolverId; label: string; tag: string }[] = [
+  { id: 'bisection', label: 'Bisection', tag: 'Root' },
+  { id: 'newton', label: 'Newton', tag: 'Root' },
+  { id: 'secant', label: 'Secant', tag: 'Root' },
+  { id: 'fixed-point', label: 'Fixed-Point', tag: 'Root' },
+  { id: 'newton-divided', label: 'Divided Diff', tag: 'Interp' },
+  { id: 'lagrange', label: 'Lagrange', tag: 'Interp' },
+];
+
 interface DedicatedSolverScreenProps {
   method: RootMethodType;
   onBack: () => void;
   onOpenGuide: () => void;
+  onChangeMethod?: (method: SolverId) => void;
 }
 
 export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
   method,
   onBack,
   onOpenGuide,
+  onChangeMethod,
 }) => {
   const { colors, isDark } = useTheme();
   const cfg = METHOD_CONFIG[method];
@@ -131,8 +143,14 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
   const [tolText, setTolText] = useState('1e-6');
   const [maxIterText, setMaxIterText] = useState('50');
   const [activeField, setActiveField] = useState<'fn' | 'g'>('fn');
-  const [fnSelection, setFnSelection] = useState<{ start: number; end: number } | null>(null);
-  const [gSelection, setGSelection] = useState<{ start: number; end: number } | null>(null);
+  const fnSelection = useRef<{ start: number; end: number }>({
+    start: cfg.defaultFn.length,
+    end: cfg.defaultFn.length,
+  });
+  const gSelection = useRef<{ start: number; end: number }>({
+    start: (cfg.defaultG || '').length,
+    end: (cfg.defaultG || '').length,
+  });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSolving, setIsSolving] = useState(false);
@@ -237,66 +255,63 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
   const insertSymbol = (s: string) => {
     if (activeField === 'g' && method === 'fixed-point') {
       setGFunctionStr((prev) => {
-        const start = gSelection?.start ?? prev.length;
-        const end = gSelection?.end ?? prev.length;
+        const start = gSelection.current?.start ?? prev.length;
+        const end = gSelection.current?.end ?? prev.length;
         const next = prev.slice(0, start) + s + prev.slice(end);
-        setGSelection({ start: start + s.length, end: start + s.length });
+        gSelection.current = { start: start + s.length, end: start + s.length };
         return next;
       });
     } else {
       setFunctionStr((prev) => {
-        const start = fnSelection?.start ?? prev.length;
-        const end = fnSelection?.end ?? prev.length;
+        const start = fnSelection.current?.start ?? prev.length;
+        const end = fnSelection.current?.end ?? prev.length;
         const next = prev.slice(0, start) + s + prev.slice(end);
-        setFnSelection({ start: start + s.length, end: start + s.length });
+        fnSelection.current = { start: start + s.length, end: start + s.length };
         return next;
       });
     }
-    setResult(null);
   };
 
   const backspaceSymbol = () => {
     if (activeField === 'g' && method === 'fixed-point') {
       setGFunctionStr((prev) => {
-        const start = gSelection?.start ?? prev.length;
-        const end = gSelection?.end ?? prev.length;
+        const start = gSelection.current?.start ?? prev.length;
+        const end = gSelection.current?.end ?? prev.length;
         if (start !== end) {
-          setGSelection({ start, end: start });
+          gSelection.current = { start, end: start };
           return prev.slice(0, start) + prev.slice(end);
         }
         if (start > 0) {
-          setGSelection({ start: start - 1, end: start - 1 });
+          gSelection.current = { start: start - 1, end: start - 1 };
           return prev.slice(0, start - 1) + prev.slice(start);
         }
         return prev;
       });
     } else {
       setFunctionStr((prev) => {
-        const start = fnSelection?.start ?? prev.length;
-        const end = fnSelection?.end ?? prev.length;
+        const start = fnSelection.current?.start ?? prev.length;
+        const end = fnSelection.current?.end ?? prev.length;
         if (start !== end) {
-          setFnSelection({ start, end: start });
+          fnSelection.current = { start, end: start };
           return prev.slice(0, start) + prev.slice(end);
         }
         if (start > 0) {
-          setFnSelection({ start: start - 1, end: start - 1 });
+          fnSelection.current = { start: start - 1, end: start - 1 };
           return prev.slice(0, start - 1) + prev.slice(start);
         }
         return prev;
       });
     }
-    setResult(null);
   };
 
   const clearActiveSymbol = () => {
     if (activeField === 'g' && method === 'fixed-point') {
       setGFunctionStr('');
-      setGSelection({ start: 0, end: 0 });
+      gSelection.current = { start: 0, end: 0 };
     } else {
       setFunctionStr('');
-      setFnSelection({ start: 0, end: 0 });
+      fnSelection.current = { start: 0, end: 0 };
     }
-    setResult(null);
   };
 
   return (
@@ -326,6 +341,42 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
         >
           <Text style={[styles.guideBtnText, { color: cfg.accentColor }]}>?</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Horizontal Method Switcher Strip */}
+      <View style={[styles.methodBarContainer, { borderBottomColor: colors.border }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.methodBarContent}
+        >
+          {ALL_SOLVER_METHODS.map((m) => {
+            const isActive = m.id === method;
+            return (
+              <TouchableOpacity
+                key={m.id}
+                onPress={() => onChangeMethod?.(m.id)}
+                activeOpacity={0.75}
+                style={[
+                  styles.methodTabChip,
+                  {
+                    backgroundColor: isActive ? cfg.accentColor : colors.surface,
+                    borderColor: isActive ? cfg.accentColor : colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.methodTabChipText,
+                    isActive ? styles.textWhite : { color: colors.textSecondary },
+                  ]}
+                >
+                  {m.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -377,15 +428,15 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
             placeholder="e.g. x^3 - 2*x - 5"
             value={functionStr}
             onFocus={() => setActiveField('fn')}
-            onSelectionChange={(e) => setFnSelection(e.nativeEvent.selection)}
+            onSelectionChange={(e) => {
+              fnSelection.current = e.nativeEvent.selection;
+            }}
             onChangeText={(text) => {
               setFunctionStr(text);
-              setResult(null);
             }}
             onClear={() => {
               setFunctionStr('');
-              setFnSelection({ start: 0, end: 0 });
-              setResult(null);
+              fnSelection.current = { start: 0, end: 0 };
             }}
           />
 
@@ -406,10 +457,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   placeholder="e.g. 1"
                   keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
                   value={aText}
-                  onChangeText={(t) => {
-                    setAText(t);
-                    setResult(null);
-                  }}
+                  onChangeText={(t) => setAText(t)}
                 />
               </View>
               <View style={styles.halfCol}>
@@ -419,10 +467,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   placeholder="e.g. 2"
                   keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
                   value={bText}
-                  onChangeText={(t) => {
-                    setBText(t);
-                    setResult(null);
-                  }}
+                  onChangeText={(t) => setBText(t)}
                 />
               </View>
             </View>
@@ -435,10 +480,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
               placeholder="e.g. 2"
               keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
               value={x0Text}
-              onChangeText={(t) => {
-                setX0Text(t);
-                setResult(null);
-              }}
+              onChangeText={(t) => setX0Text(t)}
             />
           )}
 
@@ -451,10 +493,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   placeholder="e.g. 1"
                   keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
                   value={x0Text}
-                  onChangeText={(t) => {
-                    setX0Text(t);
-                    setResult(null);
-                  }}
+                  onChangeText={(t) => setX0Text(t)}
                 />
               </View>
               <View style={styles.halfCol}>
@@ -464,10 +503,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   placeholder="e.g. 2"
                   keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
                   value={x1Text}
-                  onChangeText={(t) => {
-                    setX1Text(t);
-                    setResult(null);
-                  }}
+                  onChangeText={(t) => setX1Text(t)}
                 />
               </View>
             </View>
@@ -481,15 +517,13 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                 placeholder="e.g. (2*x + 5)^(1/3)"
                 value={gFunctionStr}
                 onFocus={() => setActiveField('g')}
-                onSelectionChange={(e) => setGSelection(e.nativeEvent.selection)}
-                onChangeText={(t) => {
-                  setGFunctionStr(t);
-                  setResult(null);
+                onSelectionChange={(e) => {
+                  gSelection.current = e.nativeEvent.selection;
                 }}
+                onChangeText={(t) => setGFunctionStr(t)}
                 onClear={() => {
                   setGFunctionStr('');
-                  setGSelection({ start: 0, end: 0 });
-                  setResult(null);
+                  gSelection.current = { start: 0, end: 0 };
                 }}
               />
               <TechInput
@@ -498,10 +532,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                 placeholder="e.g. 2"
                 keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
                 value={x0Text}
-                onChangeText={(t) => {
-                  setX0Text(t);
-                  setResult(null);
-                }}
+                onChangeText={(t) => setX0Text(t)}
               />
             </>
           )}
@@ -527,10 +558,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                     placeholder="1e-6"
                     keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
                     value={tolText}
-                    onChangeText={(t) => {
-                      setTolText(t);
-                      setResult(null);
-                    }}
+                    onChangeText={(t) => setTolText(t)}
                   />
                 </View>
                 <View style={styles.halfCol}>
@@ -540,10 +568,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                     placeholder="50"
                     keyboardType="number-pad"
                     value={maxIterText}
-                    onChangeText={(t) => {
-                      setMaxIterText(t);
-                      setResult(null);
-                    }}
+                    onChangeText={(t) => setMaxIterText(t)}
                   />
                 </View>
               </View>
@@ -716,6 +741,31 @@ const styles = StyleSheet.create({
   },
   calcBtn: {
     marginTop: 4,
+  },
+  methodBarContainer: {
+    borderBottomWidth: 1,
+    paddingVertical: 8,
+  },
+  methodBarContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  methodTabChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  methodTabChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  textWhite: {
+    color: '#FFFFFF',
   },
 });
 

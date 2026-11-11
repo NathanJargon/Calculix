@@ -24,6 +24,8 @@ import {
   InterpolationMethodType,
   InterpolationResult,
 } from '../types/interpolation';
+import { SolverId } from './HomeScreen';
+import { ALL_SOLVER_METHODS } from './DedicatedSolverScreen';
 
 const INTERPOLATION_CONFIG: Record<
   InterpolationMethodType,
@@ -61,12 +63,14 @@ interface DedicatedInterpolationScreenProps {
   method: InterpolationMethodType;
   onBack: () => void;
   onOpenGuide: () => void;
+  onChangeMethod?: (method: SolverId) => void;
 }
 
 export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreenProps> = ({
   method,
   onBack,
   onOpenGuide,
+  onChangeMethod,
 }) => {
   const { colors, isDark } = useTheme();
   const cfg = INTERPOLATION_CONFIG[method];
@@ -140,6 +144,42 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
         </TouchableOpacity>
       </View>
 
+      {/* Horizontal Method Switcher Strip */}
+      <View style={[styles.methodBarContainer, { borderBottomColor: colors.border }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.methodBarContent}
+        >
+          {ALL_SOLVER_METHODS.map((m) => {
+            const isActive = m.id === method;
+            return (
+              <TouchableOpacity
+                key={m.id}
+                onPress={() => onChangeMethod?.(m.id)}
+                activeOpacity={0.75}
+                style={[
+                  styles.methodTabChip,
+                  {
+                    backgroundColor: isActive ? cfg.accentColor : colors.surface,
+                    borderColor: isActive ? cfg.accentColor : colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.methodTabChipText,
+                    isActive ? styles.textWhite : { color: colors.textSecondary },
+                  ]}
+                >
+                  {m.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -167,11 +207,9 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
           targetX={targetX}
           onPointsChange={(newPoints) => {
             setPoints(newPoints);
-            setResult(null);
           }}
           onTargetXChange={(newTarget) => {
             setTargetX(newTarget);
-            setResult(null);
           }}
           onSolve={handleSolve}
           isSolving={isSolving}
@@ -278,6 +316,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontWeight: '500',
+  },
+  methodBarContainer: {
+    borderBottomWidth: 1,
+    paddingVertical: 8,
+  },
+  methodBarContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  methodTabChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  methodTabChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  textWhite: {
+    color: '#FFFFFF',
   },
 });
 

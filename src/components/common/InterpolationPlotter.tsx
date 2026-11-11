@@ -90,7 +90,12 @@ export const InterpolationPlotter: React.FC<InterpolationPlotterProps> = ({
   return (
     <View
       style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      onLayout={(e) => setPlotWidth(e.nativeEvent.layout.width - 32)}
+      onLayout={(e) => {
+        const nextW = Math.round(e.nativeEvent.layout.width - 32);
+        if (nextW > 50 && Math.abs(nextW - plotWidth) > 3) {
+          setPlotWidth(nextW);
+        }
+      }}
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>

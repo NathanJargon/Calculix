@@ -20,7 +20,7 @@ interface TechInputProps extends TextInputProps {
   onClear?: () => void;
 }
 
-export const TechInput: React.FC<TechInputProps> = ({
+export const TechInput: React.FC<TechInputProps> = React.memo(({
   label,
   prefix,
   suffix,
@@ -108,7 +108,9 @@ export const TechInput: React.FC<TechInputProps> = ({
       </View>
     </View>
   );
-};
+});
+
+TechInput.displayName = 'TechInput';
 
 const styles = StyleSheet.create({
   container: {

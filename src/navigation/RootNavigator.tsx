@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   BackHandler,
   Modal,
   StyleSheet,
@@ -211,7 +212,7 @@ export const RootNavigator: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [activeSolver, setActiveSolver] = useState<SolverId | null>(null);
+  const [activeSolver, setActiveSolver] = useState<SolverId | null>('bisection');
 
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -234,10 +235,6 @@ export const RootNavigator: React.FC = () => {
   useEffect(() => {
     // Hardware Android Back Button Handler (F6)
     const onBackPress = () => {
-      if (activeSolver !== null) {
-        setActiveSolver(null);
-        return true;
-      }
       if (menuOpen) {
         setMenuOpen(false);
         return true;
@@ -250,7 +247,20 @@ export const RootNavigator: React.FC = () => {
         setHistoryOpen(false);
         return true;
       }
-      return false;
+      if (activeSolver !== null) {
+        setActiveSolver(null);
+        return true;
+      }
+      Alert.alert(
+        'Exit Calculix',
+        'Do you want to exit the application?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Exit', style: 'destructive', onPress: () => BackHandler.exitApp() },
+        ],
+        { cancelable: true }
+      );
+      return true;
     };
 
     const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -287,14 +297,18 @@ export const RootNavigator: React.FC = () => {
       <View style={[styles.appWrapper, { backgroundColor: colors.background }]}>
         {isRootFinding ? (
           <DedicatedSolverScreen
+            key={activeSolver}
             method={activeSolver as RootMethodType}
             onBack={() => setActiveSolver(null)}
+            onChangeMethod={(newMethod) => setActiveSolver(newMethod)}
             onOpenGuide={() => setGuideOpen(true)}
           />
         ) : (
           <DedicatedInterpolationScreen
+            key={activeSolver}
             method={activeSolver as InterpolationMethodType}
             onBack={() => setActiveSolver(null)}
+            onChangeMethod={(newMethod) => setActiveSolver(newMethod)}
             onOpenGuide={() => setGuideOpen(true)}
           />
         )}

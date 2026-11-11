@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import { compileFunction } from '../../math/evaluator';
@@ -23,7 +23,15 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
   const [plotWidth, setPlotWidth] = useState(300);
   const plotHeight = 180;
 
-  const compiledResult = useMemo(() => compileFunction(functionStr), [functionStr]);
+  const [debouncedFn, setDebouncedFn] = useState(functionStr);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFn(functionStr);
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [functionStr]);
+
+  const compiledResult = useMemo(() => compileFunction(debouncedFn), [debouncedFn]);
   const evalFn = compiledResult.compiled?.evaluate;
 
   const { minX, maxX, pathD, hasZeroAxisY, axisY, hasZeroAxisX, axisX, toSvgX, toSvgY } = useMemo(() => {
@@ -117,7 +125,12 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
   return (
     <View
       style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      onLayout={(e) => setPlotWidth(e.nativeEvent.layout.width - 32)}
+      onLayout={(e) => {
+        const nextW = Math.round(e.nativeEvent.layout.width - 32);
+        if (nextW > 50 && Math.abs(nextW - plotWidth) > 3) {
+          setPlotWidth(nextW);
+        }
+      }}
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
