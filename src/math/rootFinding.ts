@@ -4,7 +4,6 @@ import {
   NewtonIteration,
   RootFindingInput,
   RootFindingResult,
-  RootIteration,
   SecantIteration,
 } from '../types/rootFinding';
 import {
@@ -14,6 +13,27 @@ import {
 
 export function solveRoot(input: RootFindingInput): RootFindingResult {
   const startTime = Date.now();
+
+  // Validate against NaN inputs (F15)
+  if (
+    (input.a !== undefined && Number.isNaN(input.a)) ||
+    (input.b !== undefined && Number.isNaN(input.b)) ||
+    (input.x0 !== undefined && Number.isNaN(input.x0)) ||
+    (input.x1 !== undefined && Number.isNaN(input.x1)) ||
+    (input.tolerance !== undefined && Number.isNaN(input.tolerance)) ||
+    (input.maxIterations !== undefined && Number.isNaN(input.maxIterations))
+  ) {
+    return {
+      method: input.method,
+      root: null,
+      totalIterations: 0,
+      status: 'PARSING_ERROR',
+      statusMessage: 'Invalid input: one or more numerical fields contain NaN',
+      iterations: [],
+      executionTimeMs: 0,
+      parsedFunction: input.functionStr || '',
+    };
+  }
 
   // Validate function compilation
   const { compiled: fComp, error: fErr } = compileFunction(input.functionStr);
@@ -67,7 +87,7 @@ function runBisection(
   const aInit = input.a ?? 0;
   const bInit = input.b ?? 1;
   const tol = input.tolerance > 0 ? input.tolerance : 1e-6;
-  const maxIter = input.maxIterations > 0 ? input.maxIterations : 50;
+  const maxIter = Math.min(Math.max(input.maxIterations > 0 ? input.maxIterations : 50, 1), 1000);
 
   let fa: number;
   let fb: number;
@@ -181,6 +201,18 @@ function runBisection(
 
     // Convergence criteria: |f(c)| < tol or interval width < tol or relErr < tol%
     if (Math.abs(fc) < tol || (prevC !== null && relErr < tol * 100) || absErr < tol) {
+      if (Math.abs(fc) > 1.0 || !Number.isFinite(fc)) {
+        return {
+          method: 'bisection',
+          root: null,
+          totalIterations: iter,
+          status: 'DIVERGED',
+          statusMessage: `Possible discontinuity or vertical asymptote (pole) detected near x ≈ ${c.toFixed(6)} where |f(x)| is large (${Math.abs(fc).toExponential(3)}).`,
+          iterations,
+          executionTimeMs: Date.now() - startTime,
+          parsedFunction: parsedFn,
+        };
+      }
       return {
         method: 'bisection',
         root: c,
@@ -230,7 +262,7 @@ function runNewton(
 ): RootFindingResult {
   let x = input.x0 ?? 0;
   const tol = input.tolerance > 0 ? input.tolerance : 1e-6;
-  const maxIter = input.maxIterations > 0 ? input.maxIterations : 50;
+  const maxIter = Math.min(Math.max(input.maxIterations > 0 ? input.maxIterations : 50, 1), 1000);
 
   const iterations: NewtonIteration[] = [];
 
@@ -341,7 +373,7 @@ function runSecant(
   let xPrev = input.x0 ?? 0;
   let xCurr = input.x1 ?? 1;
   const tol = input.tolerance > 0 ? input.tolerance : 1e-6;
-  const maxIter = input.maxIterations > 0 ? input.maxIterations : 50;
+  const maxIter = Math.min(Math.max(input.maxIterations > 0 ? input.maxIterations : 50, 1), 1000);
 
   if (Math.abs(xCurr - xPrev) < 1e-15) {
     return {
@@ -462,10 +494,10 @@ function runFixedPoint(
 ): RootFindingResult {
   let x = input.x0 ?? 0;
   const tol = input.tolerance > 0 ? input.tolerance : 1e-6;
-  const maxIter = input.maxIterations > 0 ? input.maxIterations : 50;
+  const maxIter = Math.min(Math.max(input.maxIterations > 0 ? input.maxIterations : 50, 1), 1000);
 
   // Use g(x) if provided, otherwise default to x - f(x)
-  const gStr = input.gFunctionStr?.trim() || `${x} - (${input.functionStr})`;
+  const gStr = input.gFunctionStr?.trim() || `x - (${input.functionStr})`;
   const { compiled: gComp, error: gErr } = compileFunction(gStr);
 
   if (!gComp || gErr) {

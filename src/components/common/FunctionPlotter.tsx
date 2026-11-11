@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import { compileFunction } from '../../math/evaluator';
@@ -19,7 +19,7 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
   b,
   title = 'Interactive Function Curve',
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [plotWidth, setPlotWidth] = useState(300);
   const plotHeight = 180;
 
@@ -43,7 +43,7 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
   let minY = Infinity;
   let maxY = -Infinity;
 
-  const compiledResult = compileFunction(functionStr);
+  const compiledResult = useMemo(() => compileFunction(functionStr), [functionStr]);
   const evalFn = compiledResult.compiled?.evaluate;
 
   if (evalFn) {

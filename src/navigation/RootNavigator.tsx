@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
+  BackHandler,
   Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeScreen, SolverId } from '../screens/HomeScreen';
 import { DedicatedSolverScreen } from '../screens/DedicatedSolverScreen';
@@ -21,8 +22,9 @@ import { useTheme } from '../theme/ThemeContext';
 import { RootMethodType } from '../types/rootFinding';
 import { InterpolationMethodType } from '../types/interpolation';
 
+export const navigationRef = createNavigationContainerRef<any>();
+
 const Tab = createBottomTabNavigator();
-const { width } = Dimensions.get('window');
 
 // Minimal SVG-style geometric tab icons
 const TabIcon: React.FC<{
@@ -59,6 +61,14 @@ const TabIcon: React.FC<{
   );
 };
 
+const HomeTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
+  <TabIcon type="home" focused={focused} color={color} />
+);
+
+const SettingsTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
+  <TabIcon type="settings" focused={focused} color={color} />
+);
+
 // Slide-in Left Drawer Menu
 const LeftDrawerModal: React.FC<{
   visible: boolean;
@@ -67,6 +77,8 @@ const LeftDrawerModal: React.FC<{
   onNavigateSettings: () => void;
 }> = ({ visible, onClose, onOpenGuide, onNavigateSettings }) => {
   const { colors, isDark, toggleTheme } = useTheme();
+  const { width } = useWindowDimensions();
+  const panelWidth = Math.min(width * 0.78, 320);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -77,7 +89,7 @@ const LeftDrawerModal: React.FC<{
       >
         <TouchableOpacity
           activeOpacity={1}
-          style={[styles.drawerPanel, { backgroundColor: colors.surface }]}
+          style={[styles.drawerPanel, { backgroundColor: colors.surface, width: panelWidth }]}
         >
           <SafeAreaView edges={['top', 'bottom']} style={styles.drawerInner}>
             {/* Header info */}
@@ -104,7 +116,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.secondaryLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.secondary }]}>?</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.secondary }]}>¶</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -125,14 +137,14 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.accentLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.accent }]}>⚙</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.accent }]}>#</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
                     Settings
                   </Text>
                   <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
-                    Dark mode & info
+                    Preferences & info
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -147,9 +159,8 @@ const LeftDrawerModal: React.FC<{
               activeOpacity={0.7}
             >
               <View style={styles.darkToggleLeft}>
-                <Text style={styles.darkToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
                 <Text style={[styles.darkToggleLabel, { color: colors.textPrimary }]}>
-                  {isDark ? 'Light Theme' : 'Dark Theme'}
+                  Dark Theme
                 </Text>
               </View>
               <View
@@ -158,7 +169,7 @@ const LeftDrawerModal: React.FC<{
                   { backgroundColor: isDark ? colors.primary : colors.surfaceSecondary },
                 ]}
               >
-                <Text style={[styles.togglePillText, { color: isDark ? '#FFFFFF' : colors.textSecondary }]}>
+                <Text style={[styles.togglePillText, isDark ? styles.textWhite : { color: colors.textSecondary }]}>
                   {isDark ? 'ON' : 'OFF'}
                 </Text>
               </View>
@@ -193,6 +204,28 @@ export const RootNavigator: React.FC = () => {
         setShowIntro(false);
       });
   }, []);
+
+  useEffect(() => {
+    // Hardware Android Back Button Handler (F6)
+    const onBackPress = () => {
+      if (activeSolver !== null) {
+        setActiveSolver(null);
+        return true;
+      }
+      if (menuOpen) {
+        setMenuOpen(false);
+        return true;
+      }
+      if (guideOpen) {
+        setGuideOpen(false);
+        return true;
+      }
+      return false;
+    };
+
+    const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backSub.remove();
+  }, [activeSolver, menuOpen, guideOpen]);
 
   const handleFinishIntro = async () => {
     try {
@@ -245,12 +278,14 @@ export const RootNavigator: React.FC = () => {
   const tabBarHeight = 58 + bottomInset;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <View style={[styles.appWrapper, { backgroundColor: colors.background }]}>
         <Tab.Navigator
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: false,
+            tabBarActiveTintColor: colors.primary,
+            tabBarInactiveTintColor: colors.tabIcon,
             tabBarStyle: {
               backgroundColor: colors.tabBar,
               borderTopColor: colors.border,
@@ -274,13 +309,7 @@ export const RootNavigator: React.FC = () => {
           <Tab.Screen
             name="Home"
             options={{
-              tabBarIcon: ({ focused }) => (
-                <TabIcon
-                  type="home"
-                  focused={focused}
-                  color={focused ? colors.primary : colors.tabIcon}
-                />
-              ),
+              tabBarIcon: HomeTabIcon,
             }}
           >
             {() => (
@@ -296,13 +325,7 @@ export const RootNavigator: React.FC = () => {
           <Tab.Screen
             name="Settings"
             options={{
-              tabBarIcon: ({ focused }) => (
-                <TabIcon
-                  type="settings"
-                  focused={focused}
-                  color={focused ? colors.primary : colors.tabIcon}
-                />
-              ),
+              tabBarIcon: SettingsTabIcon,
             }}
           >
             {() => <SettingsScreen />}
@@ -315,7 +338,9 @@ export const RootNavigator: React.FC = () => {
           onClose={() => setMenuOpen(false)}
           onOpenGuide={() => setGuideOpen(true)}
           onNavigateSettings={() => {
-            // Can be toggled if needed
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('Settings');
+            }
           }}
         />
 
@@ -373,7 +398,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   drawerPanel: {
-    width: width * 0.74,
+    width: '74%',
     maxWidth: 290,
     height: '100%',
     paddingHorizontal: 22,
@@ -477,5 +502,8 @@ const styles = StyleSheet.create({
   togglePillText: {
     fontSize: 11,
     fontWeight: '800',
+  },
+  textWhite: {
+    color: '#FFFFFF',
   },
 });

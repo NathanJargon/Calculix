@@ -50,11 +50,11 @@ export const SettingsScreen: React.FC = () => {
             value={isDark}
             onValueChange={toggleTheme}
             trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={isDark ? '#FFFFFF' : '#FFFFFF'}
+            thumbColor={isDark ? '#FFFFFF' : colors.primary}
           />
         </View>
 
-        <View style={[styles.settingRow, { borderTopWidth: 1, borderTopColor: colors.borderLight }]}>
+        <View style={[styles.settingRow, styles.settingRowBorder, { borderTopColor: colors.borderLight }]}>
           <View style={styles.settingTextGroup}>
             <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
               Replay Onboarding Tour
@@ -66,8 +66,12 @@ export const SettingsScreen: React.FC = () => {
           <TouchableOpacity
             style={[styles.resetTourBtn, { backgroundColor: colors.primaryLight }]}
             onPress={async () => {
-              await AsyncStorage.removeItem('has_seen_intro');
-              Alert.alert('Tour Reset', 'The intro tour will show again the next time the app opens.');
+              try {
+                await AsyncStorage.removeItem('has_seen_intro');
+                Alert.alert('Tour Reset', 'The intro tour will show again the next time the app opens.');
+              } catch {
+                Alert.alert('Error', 'Could not reset the tour. Please try again.');
+              }
             }}
             activeOpacity={0.7}
           >
@@ -115,7 +119,7 @@ export const SettingsScreen: React.FC = () => {
         </View>
         <View style={[styles.infoRow, styles.rowBorder, { borderBottomColor: colors.borderLight }]}>
           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Version</Text>
-          <Text style={[styles.infoValue, { color: colors.textPrimary }]}>1.0.2 (Release)</Text>
+          <Text style={[styles.infoValue, { color: colors.textPrimary }]}>1.0.3 (Release)</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Math Core</Text>
@@ -196,6 +200,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 14,
+  },
+  settingRowBorder: {
+    borderTopWidth: 1,
   },
   settingTextGroup: {
     flex: 1,

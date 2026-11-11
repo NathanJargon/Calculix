@@ -3,15 +3,7 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(@react-native|react-native|@react-navigation|@react-native-async-storage|react-native-svg|mathjs|react-native-google-mobile-ads)/)',
   ],
-  setupFiles: [
-    './node_modules/react-native-gesture-handler/jestSetup.js',
-    '@react-native-async-storage/async-storage/jest/async-storage-mock',
-  ].filter((p) => {
-    try {
-      require.resolve(p);
-      return true;
-    } catch {
-      return false;
-    }
-  }),
+  moduleNameMapper: {
+    '@react-native-async-storage/async-storage': '<rootDir>/__mocks__/async-storage.js',
+  },
 };

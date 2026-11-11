@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -13,7 +15,7 @@ export const LightColors = {
 
   textPrimary: '#1E232D',
   textSecondary: '#64748B',
-  textMuted: '#94A3B8',
+  textMuted: '#5F7188',
   textInverse: '#FFFFFF',
 
   primary: '#FF2E93',
@@ -54,8 +56,8 @@ export const DarkColors: typeof LightColors = {
   borderActive: '#FF2E93',
 
   textPrimary: '#F1F5F9',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
+  textSecondary: '#A0AEC0',
+  textMuted: '#8E9CAE',
   textInverse: '#FFFFFF',
 
   primary: '#FF2E93',
@@ -100,10 +102,28 @@ const ThemeContext = createContext<ThemeContextType>({
   isDark: false,
 });
 
+const THEME_STORAGE_KEY = '@calculix_theme_mode';
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const systemScheme = useColorScheme();
+  const [mode, setMode] = useState<ThemeMode>(systemScheme === 'dark' ? 'dark' : 'light');
+
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_STORAGE_KEY).then((saved) => {
+      if (saved === 'light' || saved === 'dark') {
+        setMode(saved);
+      }
+    }).catch(() => {});
+  }, []);
+
   const colors = mode === 'light' ? LightColors : DarkColors;
-  const toggleTheme = () => setMode((m) => (m === 'light' ? 'dark' : 'light'));
+  const toggleTheme = () => {
+    setMode((prev) => {
+      const next: ThemeMode = prev === 'light' ? 'dark' : 'light';
+      AsyncStorage.setItem(THEME_STORAGE_KEY, next).catch(() => {});
+      return next;
+    });
+  };
 
   return (
     <ThemeContext.Provider

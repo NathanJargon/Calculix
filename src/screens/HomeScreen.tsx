@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import {
-  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { RootMethodType } from '../types/rootFinding';
 import { InterpolationMethodType } from '../types/interpolation';
-
-const { width } = Dimensions.get('window');
-const TILE_WIDTH = (width - 48 - 14) / 2; // 24px side padding, 14px gap
 
 export type SolverId = RootMethodType | InterpolationMethodType;
 export type CategoryFilter = 'all' | 'root' | 'interpolation';
@@ -111,6 +108,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenGuide,
 }) => {
   const { colors, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const TILE_WIDTH = (width - 48 - 14) / 2; // responds to orientation changes
   const [filter, setFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -169,7 +168,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* Quick Search Bar */}
       <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.searchIcon, { color: colors.textMuted }]}>🔍</Text>
+        <Text style={[styles.searchIcon, { color: colors.textMuted }]}>S</Text>
         <TextInput
           style={[styles.searchInput, { color: colors.textPrimary }]}
           placeholder="Search bisection, newton, lagrange..."
@@ -223,54 +222,66 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Themes Header */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>Themes & Solvers</Text>
-        <Text style={[styles.sectionCount, { color: colors.primary }]}>
-          {filteredThemes.length} available
-        </Text>
+        {filteredThemes.length > 0 && (
+          <Text style={[styles.sectionCount, { color: colors.textMuted }]}>
+            {filteredThemes.length} method{filteredThemes.length !== 1 ? 's' : ''}
+          </Text>
+        )}
       </View>
 
       {/* 2x2 Grid of Theme Cards */}
       <View style={styles.gridContainer}>
-        {filteredThemes.map((item) => {
-          const cardBg = isDark ? item.darkBgColor : item.bgColor;
+        {filteredThemes.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No results found</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+              Try a different keyword or clear the filter
+            </Text>
+          </View>
+        ) : (
+          filteredThemes.map((item) => {
+            const cardBg = isDark ? item.darkBgColor : item.bgColor;
 
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.themeTile,
-                {
-                  backgroundColor: cardBg,
-                  borderColor: isDark ? colors.border : 'rgba(0, 0, 0, 0.04)',
-                },
-              ]}
-              onPress={() => onSelectMethod(item.id)}
-              activeOpacity={0.82}
-            >
-              {/* Top Row with Symbol & Badge */}
-              <View style={styles.tileHeader}>
-                <View style={[styles.symbolPill, { backgroundColor: item.accentColor + '20' }]}>
-                  <Text style={[styles.symbolText, { color: item.accentColor }]}>{item.symbol}</Text>
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  styles.themeTile,
+                  {
+                    width: TILE_WIDTH,
+                    backgroundColor: cardBg,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => onSelectMethod(item.id)}
+                activeOpacity={0.82}
+              >
+                {/* Top Row with Symbol & Badge */}
+                <View style={styles.tileHeader}>
+                  <View style={[styles.symbolPill, { backgroundColor: item.accentColor + '20' }]}>
+                    <Text style={[styles.symbolText, { color: item.accentColor }]}>{item.symbol}</Text>
+                  </View>
+                  <View style={[styles.badgePill, { backgroundColor: item.accentColor }]}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
                 </View>
-                <View style={[styles.badgePill, { backgroundColor: item.accentColor }]}>
-                  <Text style={styles.badgeText}>{item.badge}</Text>
+
+                {/* Title & Subtitle */}
+                <View style={styles.tileFooter}>
+                  <Text style={[styles.tileTitle, { color: colors.textPrimary }]}>{item.title}</Text>
+                  <Text style={[styles.tileSubtitle, { color: colors.textSecondary }]}>
+                    {item.subtitle}
+                  </Text>
                 </View>
-              </View>
 
-              {/* Title & Subtitle */}
-              <View style={styles.tileFooter}>
-                <Text style={[styles.tileTitle, { color: colors.textPrimary }]}>{item.title}</Text>
-                <Text style={[styles.tileSubtitle, { color: colors.textSecondary }]}>
-                  {item.subtitle}
-                </Text>
-              </View>
-
-              {/* Arrow Indicator on card */}
-              <View style={[styles.arrowCircle, { backgroundColor: item.accentColor + '18' }]}>
-                <Text style={[styles.arrowText, { color: item.accentColor }]}>→</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                {/* Arrow Indicator on card */}
+                <View style={[styles.arrowCircle, { backgroundColor: item.accentColor + '18' }]}>
+                  <Text style={[styles.arrowText, { color: item.accentColor }]}>→</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </View>
     </ScrollView>
   );
@@ -413,8 +424,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   themeTile: {
-    width: TILE_WIDTH,
-    height: 180,
+    minHeight: 170,
     borderRadius: 28,
     borderWidth: 1,
     padding: 16,
@@ -476,6 +486,22 @@ const styles = StyleSheet.create({
   arrowText: {
     fontSize: 14,
     fontWeight: '900',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

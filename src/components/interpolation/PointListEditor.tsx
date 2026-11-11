@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -72,13 +73,18 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
   isSolving,
 }) => {
   const { colors } = useTheme();
+  const [targetXInput, setTargetXInput] = useState(String(targetX));
 
   const addPoint = () => {
-    const lastX = points.length > 0 ? points[points.length - 1].x : 0;
+    const lastX = points.length > 0 && !Number.isNaN(points[points.length - 1].x)
+      ? points[points.length - 1].x
+      : 0;
     const newPoint: DataPoint = {
       id: Math.random().toString(36).substring(2, 9),
       x: lastX + 1,
       y: 0,
+      rawX: String(lastX + 1),
+      rawY: '0',
     };
     onPointsChange([...points, newPoint]);
   };
@@ -94,20 +100,25 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
   const updatePoint = (index: number, field: 'x' | 'y', valueStr: string) => {
     const val = parseFloat(valueStr);
     const updated = [...points];
+    const rawKey = field === 'x' ? 'rawX' : 'rawY';
     updated[index] = {
       ...updated[index],
-      [field]: Number.isNaN(val) ? 0 : val,
+      [field]: Number.isNaN(val) ? NaN : val,
+      [rawKey]: valueStr,
     };
     onPointsChange(updated);
   };
 
   const loadPreset = (preset: InterpolationPreset) => {
-    const formatted = preset.points.map((p) => ({
+    const formatted: DataPoint[] = preset.points.map((p) => ({
       id: Math.random().toString(36).substring(2, 9),
       x: p.x,
       y: p.y,
+      rawX: String(p.x),
+      rawY: String(p.y),
     }));
     onPointsChange(formatted);
+    setTargetXInput(String(preset.targetX));
     onTargetXChange(preset.targetX);
   };
 
@@ -135,11 +146,14 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
         label="Estimate Value at (x*)"
         prefix="x* ="
         placeholder="e.g. 2.5"
-        keyboardType="numeric"
-        value={String(targetX)}
+        keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+        value={targetXInput}
         onChangeText={(text) => {
+          setTargetXInput(text);
           const val = parseFloat(text);
-          onTargetXChange(Number.isNaN(val) ? 0 : val);
+          if (!Number.isNaN(val)) {
+            onTargetXChange(val);
+          }
         }}
       />
 
@@ -151,6 +165,9 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
         <TouchableOpacity
           onPress={addPoint}
           activeOpacity={0.7}
+          accessibilityLabel="Add data point"
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={[styles.addBtn, { backgroundColor: colors.secondaryLight }]}
         >
           <Text style={[styles.addBtnText, { color: colors.secondary }]}>+ Add Point</Text>
@@ -173,9 +190,9 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
           <View style={[styles.inputCell, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <TextInput
               style={[Typography.mono, styles.coordInput, { color: colors.textPrimary }]}
-              keyboardType="numeric"
+              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
               placeholderTextColor={colors.textMuted}
-              defaultValue={String(p.x)}
+              value={p.rawX !== undefined ? p.rawX : String(p.x)}
               onChangeText={(t) => updatePoint(index, 'x', t)}
             />
           </View>
@@ -183,9 +200,9 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
           <View style={[styles.inputCell, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <TextInput
               style={[Typography.mono, styles.coordInput, { color: colors.textPrimary }]}
-              keyboardType="numeric"
+              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
               placeholderTextColor={colors.textMuted}
-              defaultValue={String(p.y)}
+              value={p.rawY !== undefined ? p.rawY : String(p.y)}
               onChangeText={(t) => updatePoint(index, 'y', t)}
             />
           </View>
@@ -194,6 +211,9 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
             style={styles.deleteBtn}
             disabled={points.length <= 2}
             onPress={() => removePoint(index)}
+            accessibilityLabel={`Remove point ${index + 1}`}
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text
               style={[
@@ -245,9 +265,11 @@ const styles = StyleSheet.create({
   },
   presetChip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 16,
     marginRight: 8,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   presetText: {
     fontSize: 12,
@@ -266,8 +288,10 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 14,
+    minHeight: 34,
+    justifyContent: 'center',
   },
   addBtnText: {
     fontWeight: '800',

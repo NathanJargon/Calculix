@@ -4,6 +4,8 @@ export interface DataPoint {
   id: string;
   x: number;
   y: number;
+  rawX?: string;
+  rawY?: string;
 }
 
 export interface DividedDifferenceStep {

@@ -49,6 +49,9 @@ export const MathKeypad: React.FC<MathKeypadProps> = ({
               onPress={onBackspace}
               style={[styles.actionBtn, { backgroundColor: colors.surfaceSecondary }]}
               activeOpacity={0.7}
+              accessibilityLabel="Backspace"
+              accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={[styles.actionText, { color: colors.textSecondary }]}>⌫</Text>
             </TouchableOpacity>
@@ -58,6 +61,9 @@ export const MathKeypad: React.FC<MathKeypadProps> = ({
               onPress={onClear}
               style={[styles.actionBtn, { backgroundColor: colors.surfaceSecondary }]}
               activeOpacity={0.7}
+              accessibilityLabel="Clear equation"
+              accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={[styles.actionText, { color: colors.textSecondary }]}>C</Text>
             </TouchableOpacity>
@@ -80,6 +86,9 @@ export const MathKeypad: React.FC<MathKeypadProps> = ({
             ]}
             onPress={() => onInsert(item.value)}
             activeOpacity={0.7}
+            accessibilityLabel={`Insert ${item.label}`}
+            accessibilityRole="button"
+            hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}
           >
             <Text
               style={[
@@ -122,9 +131,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
+    minHeight: 32,
+    minWidth: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionText: {
     fontSize: 12,
@@ -133,14 +146,15 @@ const styles = StyleSheet.create({
   buttonsList: {
     flexDirection: 'row',
     gap: 6,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   btn: {
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 14,
-    minWidth: 38,
+    minWidth: 42,
+    minHeight: 42,
     alignItems: 'center',
     justifyContent: 'center',
   },

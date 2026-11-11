@@ -12,6 +12,22 @@ export function solveInterpolation(input: InterpolationInput): InterpolationResu
   const { points, targetX, method } = input;
 
   // Validation
+  if (
+    Number.isNaN(targetX) ||
+    points?.some((p) => Number.isNaN(p.x) || Number.isNaN(p.y))
+  ) {
+    return {
+      method,
+      interpolatedY: null,
+      targetX: targetX || 0,
+      points: points || [],
+      polynomialString: '',
+      status: 'INSUFFICIENT_POINTS',
+      errorMessage: 'One or more coordinate fields contain NaN.',
+      executionTimeMs: 0,
+    };
+  }
+
   if (!points || points.length < 2) {
     return {
       method,

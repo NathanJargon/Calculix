@@ -29,8 +29,11 @@ jest.mock('react-native-google-mobile-ads', () => ({
 
 import App from '../App';
 
-test('renders correctly', async () => {
+test('renders correctly and mounts component tree', async () => {
+  let tree: ReactTestRenderer.ReactTestRenderer | null = null;
   await ReactTestRenderer.act(() => {
-    ReactTestRenderer.create(<App />);
+    tree = ReactTestRenderer.create(<App />);
   });
+  expect(tree).toBeTruthy();
+  expect(tree!.toJSON()).toBeDefined();
 });

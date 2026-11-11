@@ -171,7 +171,7 @@ export const DividedDiffTable: React.FC<DividedDiffTableProps> = ({
                 ]}
               >
                 <Text style={[styles.cell, styles.idxCol, { color: colors.textMuted }]}>{t.index}</Text>
-                <Text style={[styles.cell, styles.coeffCol, { color: colors.primary, fontWeight: '700' }]}>
+                <Text style={[styles.cell, styles.coeffCol, { color: colors.primary }]}>
                   {formatFloat(t.coefficient, 5)}
                 </Text>
                 <Text style={[styles.cell, styles.factorCol, { color: colors.textPrimary }]}>{t.factors || '1'}</Text>

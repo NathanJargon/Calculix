@@ -1,10 +1,37 @@
-import { compile, derivative, parse } from 'mathjs';
+import { derivative, parse } from 'mathjs';
 
 export interface EvaluatorCompiled {
   evaluate: (x: number) => number;
   expression: string;
   derivativeExpr?: string;
   evaluateDerivative?: (x: number) => number;
+}
+
+const BLOCKED_SYMBOLS = new Set([
+  'import',
+  'createUnit',
+  'evaluate',
+  'parse',
+  'simplify',
+  'derivative',
+  'config',
+  'typed',
+  'clone',
+  'reviver',
+  '__proto__',
+  'constructor',
+  'prototype',
+]);
+
+function validateAst(node: any): void {
+  node.traverse((child: any) => {
+    if (child.type === 'AssignmentNode' || child.type === 'AccessorNode') {
+      throw new Error(`Expressions with ${child.type} are not permitted for security reasons`);
+    }
+    if (child.isSymbolNode && (BLOCKED_SYMBOLS.has(child.name) || child.name.startsWith('__'))) {
+      throw new Error(`Symbol "${child.name}" is not permitted for security reasons`);
+    }
+  });
 }
 
 /**
@@ -22,8 +49,9 @@ export function compileFunction(exprStr: string): {
   }
 
   try {
-    // Test parsing
+    // Test parsing & security validation
     const parsed = parse(sanitized);
+    validateAst(parsed);
     const compiled = parsed.compile();
 
     // Verify evaluation at a safe point (e.g. x = 1)

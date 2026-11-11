@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 import { Typography } from '../theme/typography';
 
@@ -20,6 +21,7 @@ export const TheoryGuideModal: React.FC<TheoryGuideModalProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal
@@ -28,8 +30,17 @@ export const TheoryGuideModal: React.FC<TheoryGuideModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={[styles.backdrop, { backgroundColor: colors.overlay }]}>
-        <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* Tapping backdrop dismisses the modal */}
+      <TouchableOpacity
+        style={[styles.backdrop, { backgroundColor: colors.overlay }]}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: insets.bottom }]}
+          onPress={() => {/* prevent backdrop tap from propagating */}}
+        >
           {/* Header */}
           <View style={[styles.modalHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
             <View>
@@ -49,7 +60,7 @@ export const TheoryGuideModal: React.FC<TheoryGuideModalProps> = ({
           </View>
 
           {/* Content */}
-          <ScrollView style={styles.scrollBody} contentContainerStyle={{ paddingBottom: 20 }}>
+          <ScrollView style={styles.scrollBody} contentContainerStyle={styles.scrollContent}>
             {/* 1. Bisection */}
             <View style={[styles.section, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
               <View style={[styles.sectionBadge, { backgroundColor: colors.secondaryLight }]}>
@@ -167,8 +178,8 @@ export const TheoryGuideModal: React.FC<TheoryGuideModalProps> = ({
               </View>
             </View>
           </ScrollView>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 };
@@ -224,6 +235,9 @@ const styles = StyleSheet.create({
   },
   scrollBody: {
     padding: 18,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   section: {
     borderWidth: 1,

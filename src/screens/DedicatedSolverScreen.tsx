@@ -120,17 +120,17 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
   const { colors, isDark } = useTheme();
   const cfg = METHOD_CONFIG[method];
 
-  const [input, setInput] = useState<RootFindingInput>({
-    method,
-    functionStr: cfg.defaultFn,
-    a: cfg.defaultA,
-    b: cfg.defaultB,
-    x0: cfg.defaultX0,
-    x1: cfg.defaultX1,
-    gFunctionStr: cfg.defaultG,
-    tolerance: 1e-6,
-    maxIterations: 50,
-  });
+  const [functionStr, setFunctionStr] = useState(cfg.defaultFn);
+  const [aText, setAText] = useState(cfg.defaultA !== undefined ? String(cfg.defaultA) : '');
+  const [bText, setBText] = useState(cfg.defaultB !== undefined ? String(cfg.defaultB) : '');
+  const [x0Text, setX0Text] = useState(cfg.defaultX0 !== undefined ? String(cfg.defaultX0) : '');
+  const [x1Text, setX1Text] = useState(cfg.defaultX1 !== undefined ? String(cfg.defaultX1) : '');
+  const [gFunctionStr, setGFunctionStr] = useState(cfg.defaultG || '');
+  const [tolText, setTolText] = useState('1e-6');
+  const [maxIterText, setMaxIterText] = useState('50');
+  const [activeField, setActiveField] = useState<'fn' | 'g'>('fn');
+  const [fnSelection, setFnSelection] = useState<{ start: number; end: number } | null>(null);
+  const [gSelection, setGSelection] = useState<{ start: number; end: number } | null>(null);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSolving, setIsSolving] = useState(false);
@@ -150,39 +150,131 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
 
   const handleSolve = () => {
     setIsSolving(true);
-    setTimeout(() => {
-      const res = solveRoot(input);
-      setResult(res);
-      setIsSolving(false);
-      if (res.root !== null) {
-        onCalculationCompleted();
-      }
-    }, 16);
+    const parsedA = parseFloat(aText);
+    const parsedB = parseFloat(bText);
+    const parsedX0 = parseFloat(x0Text);
+    const parsedX1 = parseFloat(x1Text);
+    const parsedTol = parseFloat(tolText);
+    const parsedMax = parseInt(maxIterText, 10);
+
+    const solverInput: RootFindingInput = {
+      method,
+      functionStr,
+      a: Number.isNaN(parsedA) ? undefined : parsedA,
+      b: Number.isNaN(parsedB) ? undefined : parsedB,
+      x0: Number.isNaN(parsedX0) ? undefined : parsedX0,
+      x1: Number.isNaN(parsedX1) ? undefined : parsedX1,
+      gFunctionStr: gFunctionStr.trim() || undefined,
+      tolerance: Number.isNaN(parsedTol) || parsedTol <= 0 ? 1e-6 : parsedTol,
+      maxIterations: Number.isNaN(parsedMax) || parsedMax <= 0 ? 50 : Math.min(parsedMax, 1000),
+    };
+
+    const res = solveRoot(solverInput);
+    setResult(res);
+    setIsSolving(false);
+    if (res.root !== null) {
+      onCalculationCompleted();
+    }
   };
 
   const applyPreset = (p: typeof cfg.presets[0]) => {
-    const updated = {
-      ...input,
-      functionStr: p.fn,
-      a: p.a !== undefined ? p.a : input.a,
-      b: p.b !== undefined ? p.b : input.b,
-      x0: p.x0 !== undefined ? p.x0 : input.x0,
-      x1: p.x1 !== undefined ? p.x1 : input.x1,
-      gFunctionStr: p.gFn || input.gFunctionStr,
-    };
-    setInput(updated);
-    setResult(solveRoot(updated));
+    const nextFn = p.fn;
+    const nextA = p.a !== undefined ? String(p.a) : aText;
+    const nextB = p.b !== undefined ? String(p.b) : bText;
+    const nextX0 = p.x0 !== undefined ? String(p.x0) : x0Text;
+    const nextX1 = p.x1 !== undefined ? String(p.x1) : x1Text;
+    const nextG = p.gFn || gFunctionStr;
+
+    setFunctionStr(nextFn);
+    setAText(nextA);
+    setBText(nextB);
+    setX0Text(nextX0);
+    setX1Text(nextX1);
+    setGFunctionStr(nextG);
+
+    const parsedA = parseFloat(nextA);
+    const parsedB = parseFloat(nextB);
+    const parsedX0 = parseFloat(nextX0);
+    const parsedX1 = parseFloat(nextX1);
+
+    setResult(
+      solveRoot({
+        method,
+        functionStr: nextFn,
+        a: Number.isNaN(parsedA) ? undefined : parsedA,
+        b: Number.isNaN(parsedB) ? undefined : parsedB,
+        x0: Number.isNaN(parsedX0) ? undefined : parsedX0,
+        x1: Number.isNaN(parsedX1) ? undefined : parsedX1,
+        gFunctionStr: nextG || undefined,
+        tolerance: 1e-6,
+        maxIterations: 50,
+      })
+    );
   };
 
   const insertSymbol = (s: string) => {
-    setInput((prev) => ({ ...prev, functionStr: prev.functionStr + s }));
+    if (activeField === 'g' && method === 'fixed-point') {
+      setGFunctionStr((prev) => {
+        const start = gSelection?.start ?? prev.length;
+        const end = gSelection?.end ?? prev.length;
+        const next = prev.slice(0, start) + s + prev.slice(end);
+        setGSelection({ start: start + s.length, end: start + s.length });
+        return next;
+      });
+    } else {
+      setFunctionStr((prev) => {
+        const start = fnSelection?.start ?? prev.length;
+        const end = fnSelection?.end ?? prev.length;
+        const next = prev.slice(0, start) + s + prev.slice(end);
+        setFnSelection({ start: start + s.length, end: start + s.length });
+        return next;
+      });
+    }
+    setResult(null);
   };
 
   const backspaceSymbol = () => {
-    setInput((prev) => ({
-      ...prev,
-      functionStr: prev.functionStr.length > 0 ? prev.functionStr.slice(0, -1) : '',
-    }));
+    if (activeField === 'g' && method === 'fixed-point') {
+      setGFunctionStr((prev) => {
+        const start = gSelection?.start ?? prev.length;
+        const end = gSelection?.end ?? prev.length;
+        if (start !== end) {
+          setGSelection({ start, end: start });
+          return prev.slice(0, start) + prev.slice(end);
+        }
+        if (start > 0) {
+          setGSelection({ start: start - 1, end: start - 1 });
+          return prev.slice(0, start - 1) + prev.slice(start);
+        }
+        return prev;
+      });
+    } else {
+      setFunctionStr((prev) => {
+        const start = fnSelection?.start ?? prev.length;
+        const end = fnSelection?.end ?? prev.length;
+        if (start !== end) {
+          setFnSelection({ start, end: start });
+          return prev.slice(0, start) + prev.slice(end);
+        }
+        if (start > 0) {
+          setFnSelection({ start: start - 1, end: start - 1 });
+          return prev.slice(0, start - 1) + prev.slice(start);
+        }
+        return prev;
+      });
+    }
+    setResult(null);
+  };
+
+  const clearActiveSymbol = () => {
+    if (activeField === 'g' && method === 'fixed-point') {
+      setGFunctionStr('');
+      setGSelection({ start: 0, end: 0 });
+    } else {
+      setFunctionStr('');
+      setFnSelection({ start: 0, end: 0 });
+    }
+    setResult(null);
   };
 
   return (
@@ -246,6 +338,9 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   activeOpacity={0.75}
                   onPress={() => applyPreset(preset)}
                   style={[styles.presetChip, { backgroundColor: cfg.accentColor + '20' }]}
+                  accessibilityLabel={`Apply preset ${preset.name}`}
+                  accessibilityRole="button"
+                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
                 >
                   <Text style={[styles.presetText, { color: cfg.accentColor }]}>{preset.name}</Text>
                 </TouchableOpacity>
@@ -258,16 +353,25 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
             label="Target Equation f(x) = 0"
             prefix="f(x) ="
             placeholder="e.g. x^3 - 2*x - 5"
-            value={input.functionStr}
-            onChangeText={(text) => setInput((prev) => ({ ...prev, functionStr: text }))}
-            onClear={() => setInput((prev) => ({ ...prev, functionStr: '' }))}
+            value={functionStr}
+            onFocus={() => setActiveField('fn')}
+            onSelectionChange={(e) => setFnSelection(e.nativeEvent.selection)}
+            onChangeText={(text) => {
+              setFunctionStr(text);
+              setResult(null);
+            }}
+            onClear={() => {
+              setFunctionStr('');
+              setFnSelection({ start: 0, end: 0 });
+              setResult(null);
+            }}
           />
 
           {/* Quick Keypad */}
           <MathKeypad
             onInsert={insertSymbol}
             onBackspace={backspaceSymbol}
-            onClear={() => setInput((prev) => ({ ...prev, functionStr: '' }))}
+            onClear={clearActiveSymbol}
           />
 
           {/* Specific Inputs based on method */}
@@ -278,11 +382,11 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   label="Start Interval (a)"
                   prefix="a ="
                   placeholder="e.g. 1"
-                  keyboardType="numeric"
-                  value={input.a !== undefined ? String(input.a) : ''}
+                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                  value={aText}
                   onChangeText={(t) => {
-                    const v = parseFloat(t);
-                    setInput((prev) => ({ ...prev, a: Number.isNaN(v) ? undefined : v }));
+                    setAText(t);
+                    setResult(null);
                   }}
                 />
               </View>
@@ -291,11 +395,11 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   label="End Interval (b)"
                   prefix="b ="
                   placeholder="e.g. 2"
-                  keyboardType="numeric"
-                  value={input.b !== undefined ? String(input.b) : ''}
+                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                  value={bText}
                   onChangeText={(t) => {
-                    const v = parseFloat(t);
-                    setInput((prev) => ({ ...prev, b: Number.isNaN(v) ? undefined : v }));
+                    setBText(t);
+                    setResult(null);
                   }}
                 />
               </View>
@@ -307,11 +411,11 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
               label="Starting Guess (x₀)"
               prefix="x₀ ="
               placeholder="e.g. 2"
-              keyboardType="numeric"
-              value={input.x0 !== undefined ? String(input.x0) : ''}
+              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+              value={x0Text}
               onChangeText={(t) => {
-                const v = parseFloat(t);
-                setInput((prev) => ({ ...prev, x0: Number.isNaN(v) ? undefined : v }));
+                setX0Text(t);
+                setResult(null);
               }}
             />
           )}
@@ -323,11 +427,11 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   label="First Guess (x₀)"
                   prefix="x₀ ="
                   placeholder="e.g. 1"
-                  keyboardType="numeric"
-                  value={input.x0 !== undefined ? String(input.x0) : ''}
+                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                  value={x0Text}
                   onChangeText={(t) => {
-                    const v = parseFloat(t);
-                    setInput((prev) => ({ ...prev, x0: Number.isNaN(v) ? undefined : v }));
+                    setX0Text(t);
+                    setResult(null);
                   }}
                 />
               </View>
@@ -336,11 +440,11 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                   label="Second Guess (x₁)"
                   prefix="x₁ ="
                   placeholder="e.g. 2"
-                  keyboardType="numeric"
-                  value={input.x1 !== undefined ? String(input.x1) : ''}
+                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                  value={x1Text}
                   onChangeText={(t) => {
-                    const v = parseFloat(t);
-                    setInput((prev) => ({ ...prev, x1: Number.isNaN(v) ? undefined : v }));
+                    setX1Text(t);
+                    setResult(null);
                   }}
                 />
               </View>
@@ -353,18 +457,28 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                 label="Rearranged: x = g(x)"
                 prefix="g(x) ="
                 placeholder="e.g. (2*x + 5)^(1/3)"
-                value={input.gFunctionStr || ''}
-                onChangeText={(t) => setInput((prev) => ({ ...prev, gFunctionStr: t }))}
+                value={gFunctionStr}
+                onFocus={() => setActiveField('g')}
+                onSelectionChange={(e) => setGSelection(e.nativeEvent.selection)}
+                onChangeText={(t) => {
+                  setGFunctionStr(t);
+                  setResult(null);
+                }}
+                onClear={() => {
+                  setGFunctionStr('');
+                  setGSelection({ start: 0, end: 0 });
+                  setResult(null);
+                }}
               />
               <TechInput
                 label="Initial Guess (x₀)"
                 prefix="x₀ ="
                 placeholder="e.g. 2"
-                keyboardType="numeric"
-                value={input.x0 !== undefined ? String(input.x0) : ''}
+                keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                value={x0Text}
                 onChangeText={(t) => {
-                  const v = parseFloat(t);
-                  setInput((prev) => ({ ...prev, x0: Number.isNaN(v) ? undefined : v }));
+                  setX0Text(t);
+                  setResult(null);
                 }}
               />
             </>
@@ -389,10 +503,11 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                     label="Accuracy Goal"
                     prefix="ε ="
                     placeholder="1e-6"
-                    value={String(input.tolerance)}
+                    keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+                    value={tolText}
                     onChangeText={(t) => {
-                      const v = parseFloat(t);
-                      if (!Number.isNaN(v) && v > 0) setInput((prev) => ({ ...prev, tolerance: v }));
+                      setTolText(t);
+                      setResult(null);
                     }}
                   />
                 </View>
@@ -402,10 +517,10 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
                     prefix="N ="
                     placeholder="50"
                     keyboardType="number-pad"
-                    value={String(input.maxIterations)}
+                    value={maxIterText}
                     onChangeText={(t) => {
-                      const v = parseInt(t, 10);
-                      if (!Number.isNaN(v) && v > 0) setInput((prev) => ({ ...prev, maxIterations: v }));
+                      setMaxIterText(t);
+                      setResult(null);
                     }}
                   />
                 </View>
@@ -418,17 +533,17 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
             label={isSolving ? 'Calculating...' : `Find Root with ${cfg.title.split(' ')[0]}`}
             variant="primary"
             onPress={handleSolve}
-            disabled={isSolving || !input.functionStr.trim()}
+            disabled={isSolving || !functionStr.trim()}
             style={{ backgroundColor: cfg.accentColor }}
           />
         </View>
 
         {/* Interactive Visual Graph */}
         <FunctionPlotter
-          functionStr={input.functionStr}
+          functionStr={functionStr}
           root={result?.root}
-          a={input.a}
-          b={input.b}
+          a={parseFloat(aText)}
+          b={parseFloat(bText)}
         />
 
         {/* Results Overview */}
@@ -546,9 +661,11 @@ const styles = StyleSheet.create({
   },
   presetChip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 16,
     marginRight: 8,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   presetText: {
     fontSize: 12,

@@ -1,16 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
-  Dimensions,
   FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
-
-const { width } = Dimensions.get('window');
 
 interface Slide {
   id: string;
@@ -52,6 +50,8 @@ interface IntroScreenProps {
 
 export const IntroScreen: React.FC<IntroScreenProps> = ({ onFinish }) => {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -74,7 +74,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onFinish }) => {
   const isLast = activeIndex === SLIDES.length - 1;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom || 16 }]}>
       {/* Top Header Row with Skip button */}
       <View style={styles.topRow}>
         <View style={styles.brandRow}>
@@ -157,7 +157,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onFinish }) => {
           <Text style={styles.startBtnText}>{isLast ? 'Start' : 'Next'}</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -202,7 +202,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   heroCard: {
-    height: 320,
+    minHeight: 280,
+    maxHeight: 340,
+    flex: 1,
     borderRadius: 36,
     padding: 24,
     overflow: 'hidden',

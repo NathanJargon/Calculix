@@ -7,7 +7,7 @@
 **A high-precision, beautifully designed numerical analysis and curve plotting mobile toolkit.**  
 Built with **bare React Native CLI (TypeScript)**, featuring interactive SVG function plotting, natural-language solution walkthroughs, persistent onboarding, and a clean pastel/obsidian design system.
 
-[![Version](https://img.shields.io/badge/Release-v1.0.2%20(v3)-success)](https://github.com/your-username/calculix/releases)
+[![Version](https://img.shields.io/badge/Release-v1.0.3%20(v4)-success)](https://github.com/NathanJargon/Calculix/releases)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.88.1-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
 [![Jest](https://img.shields.io/badge/Tests-14%20Passing-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
@@ -104,7 +104,7 @@ Calculix/
     │   ├── ThemeContext.tsx              # Dynamic theme provider with persistent switch
     │   └── typography.ts                 # Font sizes, line heights, font weights
     ├── navigation/
-    │   └── RootNavigator.tsx             # Stack & bottom tab navigator with intro gating
+    │   └── RootNavigator.tsx             # Bottom tab navigator with dedicated solver views & drawer
     ├── components/
     │   ├── common/                       # Reusable visual components
     │   │   ├── FunctionPlotter.tsx       # SVG function curve plotter with root marker
@@ -117,9 +117,9 @@ Calculix/
     │   │   ├── StatusBadge.tsx           # Convergence status indicators
     │   │   ├── MetricCard.tsx            # Stat & precision diagnostic cards
     │   │   ├── TabSelector.tsx           # Segmented pill switches
-    │   │   └── CodeBlock.tsx             # Monospace syntax formula viewer
+    │   │   ├── CodeBlock.tsx             # Monospace syntax formula viewer with clipboard
+    │   │   └── ErrorBoundary.tsx         # React class error boundary
     │   ├── rootFinding/                  # Root-finding UI components
-    │   │   ├── RootInputForm.tsx         # Algorithm parameter forms + presets
     │   │   ├── RootResults.tsx           # Solution summary card
     │   │   └── IterationTable.tsx        # Horizontally scrollable convergence matrix
     │   └── interpolation/                # Interpolation UI components
@@ -128,15 +128,13 @@ Calculix/
     │       ├── DividedDiffTable.tsx      # Divided difference table visualizer
     │       └── LagrangeBasisTable.tsx    # Lagrange basis weights & formulas
     └── screens/
-        ├── HomeScreen.tsx                # Explore Hub with 2x2 Category Grid & quick chips
+        ├── HomeScreen.tsx                # Explore Hub with Themes & Solvers grid
         ├── DedicatedSolverScreen.tsx     # Single-purpose root solver screen with plot & steps
         ├── DedicatedInterpolationScreen.tsx # Dedicated interpolation screen with curve plot
-        ├── RootFindingScreen.tsx         # Multi-tab root-finding workspace
-        ├── InterpolationScreen.tsx       # Multi-tab interpolation workspace
         ├── SettingsScreen.tsx            # Dark/Light theme toggle & onboarding reset
         ├── TheoryGuideModal.tsx          # Numerical methods theory & formula guide
         └── intro/
-            └── IntroScreen.tsx           # 3-step illustrated onboarding carousel
+            └── IntroScreen.tsx           # Illustrated onboarding carousel
 ```
 
 ---

@@ -28,11 +28,14 @@ export const IterationTable: React.FC<IterationTableProps> = ({
   iterations,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showAllRows, setShowAllRows] = useState(false);
   const { colors } = useTheme();
 
   if (!iterations || iterations.length === 0) {
     return null;
   }
+
+  const displayedIterations = showAllRows ? iterations : iterations.slice(0, 50);
 
   const renderHeaders = () => {
     switch (method) {
@@ -244,8 +247,19 @@ export const IterationTable: React.FC<IterationTableProps> = ({
               style={styles.verticalScroll}
               showsVerticalScrollIndicator={true}
             >
-              {iterations.map((iter, index) =>
-                renderRow(iter, index, index === iterations.length - 1)
+              {displayedIterations.map((iter, index) =>
+                renderRow(iter, index, index === displayedIterations.length - 1)
+              )}
+              {iterations.length > 50 && (
+                <TouchableOpacity
+                  style={[styles.showAllBtn, { backgroundColor: colors.surfaceSecondary }]}
+                  onPress={() => setShowAllRows(!showAllRows)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.showAllText, { color: colors.primary }]}>
+                    {showAllRows ? 'Show first 50 iterations' : `Show all ${iterations.length} iterations`}
+                  </Text>
+                </TouchableOpacity>
               )}
             </ScrollView>
           </View>
@@ -340,5 +354,13 @@ const styles = StyleSheet.create({
   },
   colNum: {
     width: 95,
+  },
+  showAllBtn: {
+    padding: 12,
+    alignItems: 'center',
+  },
+  showAllText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

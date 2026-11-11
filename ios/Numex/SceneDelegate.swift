@@ -30,7 +30,7 @@ class SceneDelegate: RCTDefaultReactNativeFactoryDelegate, UIWindowSceneDelegate
     #endif
     
     reactNativeFactory?.startReactNative(
-      withModuleName: "Numex",
+      withModuleName: "Calculix",
       in: window,
       connectionOptions: connectionOptions
     )

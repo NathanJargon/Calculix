@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { initAdService } from './src/services/adService';
+import { ErrorBoundary } from './src/components/common/ErrorBoundary';
 
 function MainApp(): React.JSX.Element {
   const { colors, isDark } = useTheme();
@@ -18,7 +19,9 @@ function MainApp(): React.JSX.Element {
         barStyle={isDark ? 'light-content' : 'dark-content'}
       />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
-        <RootNavigator />
+        <ErrorBoundary>
+          <RootNavigator />
+        </ErrorBoundary>
       </SafeAreaView>
     </>
   );

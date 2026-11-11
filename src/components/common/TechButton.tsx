@@ -32,7 +32,7 @@ export const TechButton: React.FC<TechButtonProps> = ({
       case 'primary':
         return {
           container: [styles.btnPrimary, { backgroundColor: colors.primary }],
-          text: { color: '#FFFFFF' },
+          text: { color: colors.textInverse },
         };
       case 'secondary':
         return {
@@ -42,12 +42,12 @@ export const TechButton: React.FC<TechButtonProps> = ({
       case 'accent':
         return {
           container: [styles.btnAccent, { backgroundColor: colors.secondary }],
-          text: { color: '#FFFFFF' },
+          text: { color: colors.textInverse },
         };
       case 'danger':
         return {
           container: [styles.btnDanger, { backgroundColor: colors.error }],
-          text: { color: '#FFFFFF' },
+          text: { color: colors.textInverse },
         };
       case 'preset':
         return {
@@ -57,7 +57,7 @@ export const TechButton: React.FC<TechButtonProps> = ({
       default:
         return {
           container: [styles.btnPrimary, { backgroundColor: colors.primary }],
-          text: { color: '#FFFFFF' },
+          text: { color: colors.textInverse },
         };
     }
   };

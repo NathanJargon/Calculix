@@ -82,8 +82,8 @@ android {
         applicationId "com.calculix.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.0.2"
+        versionCode 4
+        versionName "1.0.3"
     }
     signingConfigs {
         debug {
@@ -93,11 +93,11 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('CALCULIX_UPLOAD_STORE_FILE')) {
+            if (project.hasProperty('CALCULIX_UPLOAD_STORE_FILE') && file(CALCULIX_UPLOAD_STORE_FILE).exists()) {
                 storeFile file(CALCULIX_UPLOAD_STORE_FILE)
-                storePassword CALCULIX_UPLOAD_STORE_PASSWORD
-                keyAlias CALCULIX_UPLOAD_KEY_ALIAS
-                keyPassword CALCULIX_UPLOAD_KEY_PASSWORD
+                storePassword project.findProperty('CALCULIX_UPLOAD_STORE_PASSWORD') ?: ''
+                keyAlias project.findProperty('CALCULIX_UPLOAD_KEY_ALIAS') ?: 'calculix-key-alias'
+                keyPassword project.findProperty('CALCULIX_UPLOAD_KEY_PASSWORD') ?: ''
             } else {
                 signingConfig signingConfigs.debug
             }

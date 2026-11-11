@@ -92,6 +92,9 @@ export const TechInput: React.FC<TechInputProps> = ({
             style={[styles.clearBtn, { backgroundColor: colors.surfaceSecondary }]}
             onPress={onClear}
             activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel={`Clear ${label || 'input'}`}
+            accessibilityRole="button"
           >
             <Text style={[styles.clearIcon, { color: colors.textMuted }]}>✕</Text>
           </TouchableOpacity>
