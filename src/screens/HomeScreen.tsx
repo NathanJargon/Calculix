@@ -130,6 +130,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       {/* Top Greeting Row */}
       <View style={styles.topGreetingRow}>

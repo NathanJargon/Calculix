@@ -150,31 +150,33 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
 
   const handleSolve = () => {
     setIsSolving(true);
-    const parsedA = parseFloat(aText);
-    const parsedB = parseFloat(bText);
-    const parsedX0 = parseFloat(x0Text);
-    const parsedX1 = parseFloat(x1Text);
-    const parsedTol = parseFloat(tolText);
-    const parsedMax = parseInt(maxIterText, 10);
+    setTimeout(() => {
+      const parsedA = parseFloat(aText);
+      const parsedB = parseFloat(bText);
+      const parsedX0 = parseFloat(x0Text);
+      const parsedX1 = parseFloat(x1Text);
+      const parsedTol = parseFloat(tolText);
+      const parsedMax = parseInt(maxIterText, 10);
 
-    const solverInput: RootFindingInput = {
-      method,
-      functionStr,
-      a: Number.isNaN(parsedA) ? undefined : parsedA,
-      b: Number.isNaN(parsedB) ? undefined : parsedB,
-      x0: Number.isNaN(parsedX0) ? undefined : parsedX0,
-      x1: Number.isNaN(parsedX1) ? undefined : parsedX1,
-      gFunctionStr: gFunctionStr.trim() || undefined,
-      tolerance: Number.isNaN(parsedTol) || parsedTol <= 0 ? 1e-6 : parsedTol,
-      maxIterations: Number.isNaN(parsedMax) || parsedMax <= 0 ? 50 : Math.min(parsedMax, 1000),
-    };
+      const solverInput: RootFindingInput = {
+        method,
+        functionStr,
+        a: Number.isNaN(parsedA) ? undefined : parsedA,
+        b: Number.isNaN(parsedB) ? undefined : parsedB,
+        x0: Number.isNaN(parsedX0) ? undefined : parsedX0,
+        x1: Number.isNaN(parsedX1) ? undefined : parsedX1,
+        gFunctionStr: gFunctionStr.trim() || undefined,
+        tolerance: Number.isNaN(parsedTol) || parsedTol <= 0 ? 1e-6 : parsedTol,
+        maxIterations: Number.isNaN(parsedMax) || parsedMax <= 0 ? 50 : Math.min(parsedMax, 1000),
+      };
 
-    const res = solveRoot(solverInput);
-    setResult(res);
-    setIsSolving(false);
-    if (res.root !== null) {
-      onCalculationCompleted();
-    }
+      const res = solveRoot(solverInput);
+      setResult(res);
+      setIsSolving(false);
+      if (res.root !== null) {
+        onCalculationCompleted();
+      }
+    }, 16);
   };
 
   const applyPreset = (p: typeof cfg.presets[0]) => {
@@ -534,7 +536,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
             variant="primary"
             onPress={handleSolve}
             disabled={isSolving || !functionStr.trim()}
-            style={{ backgroundColor: cfg.accentColor }}
+            style={[styles.calcBtn, { backgroundColor: cfg.accentColor }]}
           />
         </View>
 
@@ -691,6 +693,9 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 16,
     marginBottom: 12,
+  },
+  calcBtn: {
+    marginTop: 4,
   },
 });
 

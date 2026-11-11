@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../../theme/ThemeContext';
@@ -21,51 +21,71 @@ export const InterpolationPlotter: React.FC<InterpolationPlotterProps> = ({
   const [plotWidth, setPlotWidth] = useState(300);
   const plotHeight = 180;
 
-  if (points.length < 2) return null;
-
-  // Domain range
-  const allX = points.map((p) => p.x).concat(targetX);
-  const allY = points.map((p) => p.y);
-  if (interpolatedY !== undefined && interpolatedY !== null && !isNaN(interpolatedY)) {
-    allY.push(interpolatedY);
-  }
-
-  const minX = Math.min(...allX);
-  const maxX = Math.max(...allX);
-  const minY = Math.min(...allY);
-  const maxY = Math.max(...allY);
-
-  const padX = (maxX - minX) * 0.15 || 1;
-  const padY = (maxY - minY) * 0.15 || 1;
-
-  const plotMinX = minX - padX;
-  const plotMaxX = maxX + padX;
-  const plotMinY = minY - padY;
-  const plotMaxY = maxY + padY;
-
-  const toSvgX = (x: number) => {
-    return ((x - plotMinX) / (plotMaxX - plotMinX)) * plotWidth;
-  };
-
-  const toSvgY = (y: number) => {
-    return plotHeight - ((y - plotMinY) / (plotMaxY - plotMinY)) * plotHeight;
-  };
-
-  // Connect points with a smooth curve or polyline
-  const sortedPoints = [...points].sort((a, b) => a.x - b.x);
-  let pathD = '';
-  sortedPoints.forEach((pt, idx) => {
-    const sx = toSvgX(pt.x);
-    const sy = toSvgY(pt.y);
-    if (idx === 0) {
-      pathD += `M ${sx} ${sy}`;
-    } else {
-      pathD += ` L ${sx} ${sy}`;
+  const { toSvgX, toSvgY, pathD, targetSvgX, targetSvgY } = useMemo(() => {
+    if (points.length < 2) {
+      return {
+        toSvgX: () => 0,
+        toSvgY: () => 0,
+        pathD: '',
+        targetSvgX: 0,
+        targetSvgY: null,
+      };
     }
-  });
 
-  const targetSvgX = toSvgX(targetX);
-  const targetSvgY = interpolatedY !== undefined && interpolatedY !== null ? toSvgY(interpolatedY) : null;
+    // Domain range
+    const allX = points.map((p) => p.x).concat(targetX);
+    const allY = points.map((p) => p.y);
+    if (interpolatedY !== undefined && interpolatedY !== null && !Number.isNaN(interpolatedY)) {
+      allY.push(interpolatedY);
+    }
+
+    const minX = Math.min(...allX);
+    const maxX = Math.max(...allX);
+    const minY = Math.min(...allY);
+    const maxY = Math.max(...allY);
+
+    const padX = (maxX - minX) * 0.15 || 1;
+    const padY = (maxY - minY) * 0.15 || 1;
+
+    const plotMinX = minX - padX;
+    const plotMaxX = maxX + padX;
+    const plotMinY = minY - padY;
+    const plotMaxY = maxY + padY;
+
+    const transformX = (x: number) => {
+      return ((x - plotMinX) / (plotMaxX - plotMinX)) * plotWidth;
+    };
+
+    const transformY = (y: number) => {
+      return plotHeight - ((y - plotMinY) / (plotMaxY - plotMinY)) * plotHeight;
+    };
+
+    // Connect points with a smooth curve or polyline
+    const sortedPoints = [...points].sort((a, b) => a.x - b.x);
+    let d = '';
+    sortedPoints.forEach((pt, idx) => {
+      const sx = transformX(pt.x);
+      const sy = transformY(pt.y);
+      if (idx === 0) {
+        d += `M ${sx} ${sy}`;
+      } else {
+        d += ` L ${sx} ${sy}`;
+      }
+    });
+
+    const tSvgX = transformX(targetX);
+    const tSvgY = interpolatedY !== undefined && interpolatedY !== null ? transformY(interpolatedY) : null;
+
+    return {
+      toSvgX: transformX,
+      toSvgY: transformY,
+      pathD: d,
+      targetSvgX: tSvgX,
+      targetSvgY: tSvgY,
+    };
+  }, [points, targetX, interpolatedY, plotWidth]);
+
+  if (points.length < 2) return null;
 
   return (
     <View
@@ -105,7 +125,7 @@ export const InterpolationPlotter: React.FC<InterpolationPlotterProps> = ({
           ) : null}
 
           {/* Data Points */}
-          {sortedPoints.map((pt) => {
+          {points.map((pt) => {
             const sx = toSvgX(pt.x);
             const sy = toSvgY(pt.y);
             return (

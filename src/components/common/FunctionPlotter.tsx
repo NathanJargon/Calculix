@@ -23,82 +23,93 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
   const [plotWidth, setPlotWidth] = useState(300);
   const plotHeight = 180;
 
-  // Determine x-domain
-  let minX = -4;
-  let maxX = 4;
-  if (a !== undefined && b !== undefined) {
-    const span = Math.abs(b - a);
-    const pad = span > 0 ? span * 0.4 : 2;
-    minX = Math.min(a, b) - pad;
-    maxX = Math.max(a, b) + pad;
-  } else if (root !== undefined && root !== null && !isNaN(root)) {
-    minX = root - 3;
-    maxX = root + 3;
-  }
-
-  // Sample points
-  const steps = 60;
-  const stepSize = (maxX - minX) / steps;
-  const rawPoints: { x: number; y: number }[] = [];
-  let minY = Infinity;
-  let maxY = -Infinity;
-
   const compiledResult = useMemo(() => compileFunction(functionStr), [functionStr]);
   const evalFn = compiledResult.compiled?.evaluate;
 
-  if (evalFn) {
-    for (let i = 0; i <= steps; i++) {
-      const x = minX + i * stepSize;
-      try {
-        const res = evalFn(x);
-        if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
-          rawPoints.push({ x, y: res });
-          if (res < minY) minY = res;
-          if (res > maxY) maxY = res;
+  const { minX, maxX, pathD, hasZeroAxisY, axisY, hasZeroAxisX, axisX, toSvgX, toSvgY } = useMemo(() => {
+    // Determine x-domain
+    let dMinX = -4;
+    let dMaxX = 4;
+    if (a !== undefined && b !== undefined && !Number.isNaN(a) && !Number.isNaN(b)) {
+      const span = Math.abs(b - a);
+      const pad = span > 0 ? span * 0.4 : 2;
+      dMinX = Math.min(a, b) - pad;
+      dMaxX = Math.max(a, b) + pad;
+    } else if (root !== undefined && root !== null && !Number.isNaN(root)) {
+      dMinX = root - 3;
+      dMaxX = root + 3;
+    }
+
+    // Sample points
+    const steps = 60;
+    const stepSize = (dMaxX - dMinX) / steps;
+    const rawPoints: { x: number; y: number }[] = [];
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    if (evalFn) {
+      for (let i = 0; i <= steps; i++) {
+        const x = dMinX + i * stepSize;
+        try {
+          const res = evalFn(x);
+          if (typeof res === 'number' && !Number.isNaN(res) && Number.isFinite(res)) {
+            rawPoints.push({ x, y: res });
+            if (res < minY) minY = res;
+            if (res > maxY) maxY = res;
+          }
+        } catch {
+          // Ignore point error
         }
-      } catch {
-        // Ignore point error
       }
     }
-  }
 
-  // Fallbacks if out of bounds
-  if (!isFinite(minY) || !isFinite(maxY) || minY === maxY) {
-    minY = -10;
-    maxY = 10;
-  }
-
-  // Add 15% vertical padding
-  const yPadding = (maxY - minY) * 0.15 || 2;
-  const plotMinY = minY - yPadding;
-  const plotMaxY = maxY + yPadding;
-
-  // Coordinate transforms
-  const toSvgX = (x: number) => {
-    return ((x - minX) / (maxX - minX)) * plotWidth;
-  };
-
-  const toSvgY = (y: number) => {
-    return plotHeight - ((y - plotMinY) / (plotMaxY - plotMinY)) * plotHeight;
-  };
-
-  // Build SVG Path
-  let pathD = '';
-  rawPoints.forEach((pt, index) => {
-    const sx = toSvgX(pt.x);
-    const sy = toSvgY(pt.y);
-    if (index === 0) {
-      pathD += `M ${sx} ${sy}`;
-    } else {
-      pathD += ` L ${sx} ${sy}`;
+    // Fallbacks if out of bounds
+    if (!Number.isFinite(minY) || !Number.isFinite(maxY) || minY === maxY) {
+      minY = -10;
+      maxY = 10;
     }
-  });
 
-  const axisY = toSvgY(0);
-  const axisX = toSvgX(0);
+    // Add 15% vertical padding
+    const yPadding = (maxY - minY) * 0.15 || 2;
+    const plotMinY = minY - yPadding;
+    const plotMaxY = maxY + yPadding;
 
-  const hasZeroAxisY = axisY >= 0 && axisY <= plotHeight;
-  const hasZeroAxisX = axisX >= 0 && axisX <= plotWidth;
+    // Coordinate transforms
+    const transformX = (x: number) => {
+      return ((x - dMinX) / (dMaxX - dMinX)) * plotWidth;
+    };
+
+    const transformY = (y: number) => {
+      return plotHeight - ((y - plotMinY) / (plotMaxY - plotMinY)) * plotHeight;
+    };
+
+    // Build SVG Path
+    let d = '';
+    rawPoints.forEach((pt, index) => {
+      const sx = transformX(pt.x);
+      const sy = transformY(pt.y);
+      if (index === 0) {
+        d += `M ${sx} ${sy}`;
+      } else {
+        d += ` L ${sx} ${sy}`;
+      }
+    });
+
+    const aY = transformY(0);
+    const aX = transformX(0);
+
+    return {
+      minX: dMinX,
+      maxX: dMaxX,
+      pathD: d,
+      hasZeroAxisY: aY >= 0 && aY <= plotHeight,
+      axisY: aY,
+      hasZeroAxisX: aX >= 0 && aX <= plotWidth,
+      axisX: aX,
+      toSvgX: transformX,
+      toSvgY: transformY,
+    };
+  }, [evalFn, a, b, root, plotWidth]);
 
   const rootSvgX = root !== null && root !== undefined ? toSvgX(root) : null;
   const rootSvgY = toSvgY(0);

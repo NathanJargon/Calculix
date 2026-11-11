@@ -18,6 +18,7 @@ import { DedicatedInterpolationScreen } from '../screens/DedicatedInterpolationS
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { TheoryGuideModal } from '../screens/TheoryGuideModal';
 import { IntroScreen } from '../screens/intro/IntroScreen';
+import { LoadingSplash } from '../components/common/LoadingSplash';
 import { useTheme } from '../theme/ThemeContext';
 import { RootMethodType } from '../types/rootFinding';
 import { InterpolationMethodType } from '../types/interpolation';
@@ -237,8 +238,8 @@ export const RootNavigator: React.FC = () => {
   };
 
   if (showIntro === null) {
-    // Initializing async state
-    return <View style={[styles.appWrapper, { backgroundColor: colors.background }]} />;
+    // Branded initial loading splash while restoring persisted state
+    return <LoadingSplash />;
   }
 
   if (showIntro) {

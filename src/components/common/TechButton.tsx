@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  StyleProp,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,7 +14,7 @@ interface TechButtonProps extends TouchableOpacityProps {
   variant?: 'primary' | 'secondary' | 'accent' | 'danger' | 'preset';
   size?: 'sm' | 'md';
   icon?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const TechButton: React.FC<TechButtonProps> = ({

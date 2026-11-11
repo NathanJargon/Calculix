@@ -83,17 +83,19 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
 
   const handleSolve = () => {
     setIsSolving(true);
-    const input: InterpolationInput = {
-      method,
-      points,
-      targetX,
-    };
-    const res = solveInterpolation(input);
-    setResult(res);
-    setIsSolving(false);
-    if (res.interpolatedY !== null) {
-      onCalculationCompleted();
-    }
+    setTimeout(() => {
+      const input: InterpolationInput = {
+        method,
+        points,
+        targetX,
+      };
+      const res = solveInterpolation(input);
+      setResult(res);
+      setIsSolving(false);
+      if (res.interpolatedY !== null) {
+        onCalculationCompleted();
+      }
+    }, 16);
   };
 
   return (
