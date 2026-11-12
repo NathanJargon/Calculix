@@ -26,6 +26,7 @@ import { LoadingSplash } from '../components/common/LoadingSplash';
 import { useTheme } from '../theme/ThemeContext';
 import { RootMethodType } from '../types/rootFinding';
 import { InterpolationMethodType } from '../types/interpolation';
+import { TutorialScreen } from '../screens/TutorialScreen';
 
 export const navigationRef = createNavigationContainerRef<any>();
 
@@ -33,7 +34,7 @@ const Tab = createBottomTabNavigator();
 
 // Minimal SVG-style geometric tab icons
 const TabIcon: React.FC<{
-  type: 'home' | 'quiz' | 'settings';
+  type: 'home' | 'flashcards' | 'settings' | 'learn';
   focused: boolean;
   color: string;
 }> = ({ type, focused, color }) => {
@@ -55,7 +56,7 @@ const TabIcon: React.FC<{
         </View>
       )}
 
-      {type === 'quiz' && (
+      {type === 'flashcards' && (
         <View style={styles.cardsIcon}>
           <View style={[styles.cardLayer1, { borderColor: color }]} />
           <View style={[styles.cardLayer2, { borderColor: color, backgroundColor: colors.surface }]} />
@@ -69,6 +70,14 @@ const TabIcon: React.FC<{
           </View>
         </View>
       )}
+
+      {type === 'learn' && (
+        <View style={styles.bookIcon}>
+          <View style={[styles.bookPageLeft, { backgroundColor: color }]} />
+          <View style={[styles.bookSpine, { backgroundColor: colors.surface }]} />
+          <View style={[styles.bookPageRight, { backgroundColor: color }]} />
+        </View>
+      )}
     </View>
   );
 };
@@ -77,12 +86,16 @@ const HomeTabIcon = ({ focused, color }: { focused: boolean; color: string; size
   <TabIcon type="home" focused={focused} color={color} />
 );
 
-const QuizTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
-  <TabIcon type="quiz" focused={focused} color={color} />
+const FlashcardsTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
+  <TabIcon type="flashcards" focused={focused} color={color} />
 );
 
 const SettingsTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
   <TabIcon type="settings" focused={focused} color={color} />
+);
+
+const LearnTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
+  <TabIcon type="learn" focused={focused} color={color} />
 );
 
 // Slide-in Left Drawer Menu
@@ -91,9 +104,10 @@ const LeftDrawerModal: React.FC<{
   onClose: () => void;
   onOpenGuide: () => void;
   onOpenHistory: () => void;
-  onNavigateQuiz: () => void;
+  onNavigateFlashcards: () => void;
   onNavigateSettings: () => void;
-}> = ({ visible, onClose, onOpenGuide, onOpenHistory, onNavigateQuiz, onNavigateSettings }) => {
+  onNavigateLearn: () => void;
+}> = ({ visible, onClose, onOpenGuide, onOpenHistory, onNavigateFlashcards, onNavigateSettings, onNavigateLearn }) => {
   const { colors, isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
   const panelWidth = Math.min(width * 0.78, 320);
@@ -134,7 +148,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.secondaryLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.secondary }]}>¶</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.secondary }]}>📖</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -155,7 +169,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.primary }]}>≡</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.primary }]}>⏱</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -171,19 +185,19 @@ const LeftDrawerModal: React.FC<{
                 style={styles.drawerItem}
                 onPress={() => {
                   onClose();
-                  onNavigateQuiz();
+                  onNavigateFlashcards();
                 }}
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, styles.drawerQuizIconBox]}>
-                  <Text style={[styles.drawerItemIcon, styles.drawerQuizIcon]}>⚡</Text>
+                  <Text style={[styles.drawerItemIcon, styles.drawerQuizIcon]}>🗂</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
-                    Quizizz & Cards
+                    Flashcards
                   </Text>
                   <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
-                    Quizzes, streaks & study deck
+                    Practice & study deck
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -197,7 +211,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.accentLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.accent }]}>#</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.accent }]}>⚙</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -205,6 +219,27 @@ const LeftDrawerModal: React.FC<{
                   </Text>
                   <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
                     Preferences & info
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  onClose();
+                  onNavigateLearn();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.drawerItemIconBox, styles.drawerLearnIconBox]}>
+                  <Text style={[styles.drawerItemIcon, styles.drawerLearnIcon]}>📚</Text>
+                </View>
+                <View style={styles.drawerItemTextGroup}>
+                  <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
+                    Learn & Tutorials
+                  </Text>
+                  <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
+                    Methods, examples & guides
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -360,8 +395,8 @@ export const RootNavigator: React.FC = () => {
     );
   }
 
-  const bottomInset = Math.max(insets.bottom, 10);
-  const tabBarHeight = 58 + bottomInset;
+  const bottomInset = Math.max(insets.bottom, 8);
+  const tabBarHeight = 62 + bottomInset;
 
   return (
     <NavigationContainer ref={navigationRef}>
@@ -369,9 +404,15 @@ export const RootNavigator: React.FC = () => {
         <Tab.Navigator
           screenOptions={{
             headerShown: false,
-            tabBarShowLabel: false,
+            tabBarShowLabel: true,
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.tabIcon,
+            tabBarLabelStyle: {
+              fontSize: 11,
+              fontWeight: '700',
+              marginTop: -2,
+              marginBottom: 4,
+            },
             tabBarStyle: {
               backgroundColor: colors.tabBar,
               borderTopColor: colors.border,
@@ -395,6 +436,7 @@ export const RootNavigator: React.FC = () => {
           <Tab.Screen
             name="Home"
             options={{
+              tabBarLabel: 'Solvers',
               tabBarIcon: HomeTabIcon,
             }}
           >
@@ -407,20 +449,39 @@ export const RootNavigator: React.FC = () => {
             )}
           </Tab.Screen>
 
-          {/* Flashcards & Quizzes (Quizizz Experience) */}
+          {/* Flashcards & Practice Study Deck */}
           <Tab.Screen
-            name="Quiz"
+            name="Flashcards"
             options={{
-              tabBarIcon: QuizTabIcon,
+              tabBarLabel: 'Flashcards',
+              tabBarIcon: FlashcardsTabIcon,
             }}
           >
             {() => <QuizScreen />}
+          </Tab.Screen>
+
+          {/* Learn & Tutorials */}
+          <Tab.Screen
+            name="Learn"
+            options={{
+              tabBarLabel: 'Learn',
+              tabBarIcon: LearnTabIcon,
+            }}
+          >
+            {() => (
+              <TutorialScreen
+                onOpenSolver={(methodId) => {
+                  setActiveSolver(methodId);
+                }}
+              />
+            )}
           </Tab.Screen>
 
           {/* Preferences and Settings */}
           <Tab.Screen
             name="Settings"
             options={{
+              tabBarLabel: 'Settings',
               tabBarIcon: SettingsTabIcon,
             }}
           >
@@ -434,16 +495,22 @@ export const RootNavigator: React.FC = () => {
           onClose={() => setMenuOpen(false)}
           onOpenGuide={() => setGuideOpen(true)}
           onOpenHistory={() => setHistoryOpen(true)}
-          onNavigateQuiz={() => {
+          onNavigateFlashcards={() => {
             setActiveSolver(null);
             if (navigationRef.isReady()) {
-              navigationRef.navigate('Quiz');
+              navigationRef.navigate('Flashcards');
             }
           }}
           onNavigateSettings={() => {
             setActiveSolver(null);
             if (navigationRef.isReady()) {
               navigationRef.navigate('Settings');
+            }
+          }}
+          onNavigateLearn={() => {
+            setActiveSolver(null);
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('Learn');
             }
           }}
         />
@@ -469,9 +536,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 44,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -531,6 +598,29 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     bottom: 2,
     right: 2,
+  },
+  bookIcon: {
+    width: 18,
+    height: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookPageLeft: {
+    width: 8,
+    height: 14,
+    borderTopLeftRadius: 2,
+    borderBottomLeftRadius: 2,
+  },
+  bookSpine: {
+    width: 2,
+    height: 14,
+  },
+  bookPageRight: {
+    width: 8,
+    height: 14,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
   },
   modalOverlay: {
     flex: 1,
@@ -603,6 +693,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
   },
   drawerQuizIcon: {
+    color: '#D97706',
+  },
+  drawerLearnIconBox: {
+    backgroundColor: '#FEF3C7',
+  },
+  drawerLearnIcon: {
     color: '#D97706',
   },
   drawerItemIcon: {

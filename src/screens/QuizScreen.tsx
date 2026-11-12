@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,49 +13,41 @@ import { useTheme } from '../theme/ThemeContext';
 import {
   deleteCustomQuestion,
   getAllQuestions,
-  getQuizStats,
   QuizQuestion,
-  QuizStats,
   randomizeQuestionOptions,
-  recordQuizAnswer,
   saveCustomQuestion,
   shuffleArray,
 } from '../services/quizService';
 
-const QUIZ_TILE_COLORS = [
-  '#2563EB', // 1: Royal Blue
-  '#0D9488', // 2: Vibrant Teal
-  '#D97706', // 3: Warm Amber
-  '#E11D48', // 4: Rose Pink
+// Vibrant, distinct colors matching the Quizizz/flashcard reference cards
+const OPTION_CARD_COLORS = [
+  '#2563EB', // 1: Blue
+  '#0891B2', // 2: Cyan / Teal
+  '#D97706', // 3: Amber
+  '#E11D48', // 4: Rose Crimson
 ];
 
-interface QuizScreenProps {
+interface FlashcardsScreenProps {
   onBack?: () => void;
 }
 
-export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
+export const QuizScreen: React.FC<FlashcardsScreenProps> = ({ onBack }) => {
   const { colors, isDark } = useTheme();
 
-  // Mode: 'quiz' (Quizizz 4-tile challenge) | 'flashcards' (Flip to study)
-  const [activeMode, setActiveMode] = useState<'quiz' | 'flashcards'>('quiz');
-  const [deckFilter, setDeckFilter] = useState<'all' | 'built-in' | 'custom'>('all');
+  // Mode: 'quiz' (Practice Questions) | 'flip' (Flip Flashcard Study)
+  const [activeMode, setActiveMode] = useState<'quiz' | 'flip'>('quiz');
+  const [deckFilter, setDeckFilter] = useState<'all' | 'root-finding' | 'interpolation' | 'custom'>('all');
 
   // Question Deck State
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [stats, setStats] = useState<QuizStats>({
-    streak: 0,
-    bestStreak: 0,
-    totalAnswered: 0,
-    totalCorrect: 0,
-  });
 
-  // Quiz Interaction State
+  // Interaction State
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false); // Flashcard flip state
+  const [isFlipped, setIsFlipped] = useState(false);
 
-  // Custom Q&A Creation Modal
+  // Custom Card Creation Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customQuestionText, setCustomQuestionText] = useState('');
   const [customOpt0, setCustomOpt0] = useState('');
@@ -66,18 +57,23 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
   const [customCorrectIdx, setCustomCorrectIdx] = useState(0);
   const [customExplanation, setCustomExplanation] = useState('');
 
-  // Load Questions & Stats
+  // Load Questions
   const loadData = useCallback(async () => {
-    const list = await getAllQuestions(deckFilter);
+    let list = await getAllQuestions('all');
+    if (deckFilter === 'custom') {
+      list = list.filter((q) => q.isCustom);
+    } else if (deckFilter === 'root-finding') {
+      list = list.filter((q) => q.category === 'root-finding');
+    } else if (deckFilter === 'interpolation') {
+      list = list.filter((q) => q.category === 'interpolation');
+    }
+
     const randomizedList = shuffleArray(list).map(randomizeQuestionOptions);
     setQuestions(randomizedList);
     setCurrentIndex(0);
     setSelectedOption(null);
     setIsAnswered(false);
     setIsFlipped(false);
-
-    const st = await getQuizStats();
-    setStats(st);
   }, [deckFilter]);
 
   useEffect(() => {
@@ -85,20 +81,17 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
   }, [loadData]);
 
   const currentQ = questions[currentIndex] || null;
+  const progressRatio = questions.length > 0 ? (currentIndex + 1) / questions.length : 0;
+  const progressPercent = Math.min(Math.round(progressRatio * 100), 100);
 
-  // Handle Answer Selection in Quiz Mode
-  const handleSelectOption = async (optionIndex: number) => {
+  // Handle Option Selection in Practice Mode
+  const handleSelectOption = (optionIndex: number) => {
     if (isAnswered || !currentQ) return;
-
     setSelectedOption(optionIndex);
     setIsAnswered(true);
-
-    const isCorrect = optionIndex === currentQ.correctIndex;
-    const newStats = await recordQuizAnswer(isCorrect);
-    setStats(newStats);
   };
 
-  // Advance to Next Question
+  // Next Question
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -106,24 +99,16 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
       setIsAnswered(false);
       setIsFlipped(false);
     } else {
-      // Completed deck: reshuffle and restart
-      Alert.alert('Deck Completed! 🎉', `You completed all ${questions.length} cards! Great job studying.`, [
+      Alert.alert('Deck Completed! 🎉', `You reached the end of all ${questions.length} cards.`, [
         {
-          text: 'Shuffle & Replay',
-          onPress: () => {
-            const reshuffled = shuffleArray(questions).map(randomizeQuestionOptions);
-            setQuestions(reshuffled);
-            setCurrentIndex(0);
-            setSelectedOption(null);
-            setIsAnswered(false);
-            setIsFlipped(false);
-          },
+          text: 'Shuffle & Restart',
+          onPress: () => handleShuffleDeck(),
         },
       ]);
     }
   };
 
-  // Shuffle Action
+  // Shuffle Deck
   const handleShuffleDeck = () => {
     const reshuffled = shuffleArray(questions).map(randomizeQuestionOptions);
     setQuestions(reshuffled);
@@ -133,14 +118,14 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
     setIsFlipped(false);
   };
 
-  // Handle Create Custom Q&A
+  // Create Custom Card
   const handleCreateQuestion = async () => {
     if (!customQuestionText.trim()) {
       Alert.alert('Required', 'Please enter question text.');
       return;
     }
     if (!customOpt0.trim() || !customOpt1.trim() || !customOpt2.trim() || !customOpt3.trim()) {
-      Alert.alert('Incomplete', 'Please provide all 4 answer options.');
+      Alert.alert('Incomplete', 'Please provide 4 answer choices.');
       return;
     }
 
@@ -161,10 +146,10 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
     setIsModalOpen(false);
 
     loadData();
-    Alert.alert('Saved!', 'Your custom Q&A was added to your flashcard deck.');
+    Alert.alert('Saved!', 'Your custom flashcard has been added to the deck.');
   };
 
-  // Delete current custom question
+  // Delete Current Custom Card
   const handleDeleteCurrent = async () => {
     if (!currentQ?.isCustom) return;
     Alert.alert('Delete Card', 'Are you sure you want to delete this custom card?', [
@@ -182,163 +167,170 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
 
   return (
     <View style={[styles.container, isDark ? styles.containerDark : styles.containerLight]}>
-      {/* Quizizz-Style Top HUD */}
-      <View
-        style={[
-          styles.topHud,
-          isDark ? styles.topHudDark : styles.topHudLight,
-          { borderBottomColor: colors.border },
-        ]}
-      >
-        {onBack && (
-          <TouchableOpacity style={[styles.hudBackBtn, { borderColor: colors.border }]} onPress={onBack}>
-            <Text style={[styles.hudBackText, { color: colors.textPrimary }]}>←</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Progress Badge */}
-        <View style={styles.hudPill}>
-          <Text style={[styles.hudPillText, { color: colors.textSecondary }]}>
-            {questions.length > 0 ? `${currentIndex + 1}/${questions.length}` : '0/0'}
-          </Text>
+      {/* Sleek Top Header Bar */}
+      <View style={[styles.topHeader, isDark ? styles.headerDark : styles.headerLight, { borderBottomColor: colors.border }]}>
+        <View style={styles.headerLeftGroup}>
+          {onBack && (
+            <TouchableOpacity
+              style={[styles.backBtn, { borderColor: colors.border, backgroundColor: colors.surfaceSecondary }]}
+              onPress={onBack}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.backBtnText, { color: colors.textPrimary }]}>←</Text>
+            </TouchableOpacity>
+          )}
+          {/* Card Position Badge */}
+          <View style={[styles.counterPill, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+            <Text style={[styles.counterPillText, { color: colors.textPrimary }]}>
+              {questions.length > 0 ? `${currentIndex + 1} / ${questions.length}` : '0 / 0'}
+            </Text>
+          </View>
         </View>
 
-        {/* Flame Streak Meter */}
-        <View
-          style={[
-            styles.streakBadge,
-            stats.streak > 0 ? styles.streakBadgeActive : { backgroundColor: colors.surfaceSecondary },
-          ]}
-        >
-          <Text style={styles.flameIcon}>{stats.streak > 0 ? '🔥' : '⚡'}</Text>
-          <Text
-            style={[
-              styles.streakText,
-              stats.streak > 0 ? styles.streakTextActive : { color: colors.textMuted },
-            ]}
+        {/* Action Controls */}
+        <View style={styles.headerRightGroup}>
+          <TouchableOpacity
+            style={[styles.actionIconBtn, { borderColor: colors.border, backgroundColor: colors.surfaceSecondary }]}
+            onPress={handleShuffleDeck}
+            activeOpacity={0.7}
+            accessibilityLabel="Shuffle cards"
           >
-            Streak: {stats.streak}
-          </Text>
-        </View>
+            <Text style={[styles.actionIconText, { color: colors.textPrimary }]}>🔀</Text>
+          </TouchableOpacity>
 
-        {/* Best Streak / Score */}
-        <View style={styles.hudPill}>
-          <Text style={[styles.hudPillText, { color: colors.textSecondary }]}>
-            Best: {stats.bestStreak}
-          </Text>
+          <TouchableOpacity
+            style={[styles.createBtn, { backgroundColor: colors.primary }]}
+            onPress={() => setIsModalOpen(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.createBtnText}>+ Create</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* New Question Button */}
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
-          onPress={() => setIsModalOpen(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.addBtnText}>+ New</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Mode & Category Bar */}
-      <View style={[styles.controlsBar, isDark ? styles.controlsBarDark : styles.controlsBarLight]}>
-        <View style={styles.segmentedMode}>
+      {/* Horizontal Progress Track */}
+      <View
+        style={[
+          styles.progressBarTrack,
+          isDark ? styles.progressBarTrackDark : styles.progressBarTrackLight,
+        ]}
+      >
+        <View
+          style={[
+            styles.progressBarFill,
+            { width: `${progressPercent}%`, backgroundColor: colors.primary },
+          ]}
+        />
+      </View>
+
+      {/* Clean Segmented Mode Selector & Filters */}
+      <View style={[styles.controlsRow, isDark ? styles.controlsDark : styles.controlsLight]}>
+        <View style={styles.modeSegment}>
           <TouchableOpacity
             style={[styles.modeTab, activeMode === 'quiz' && styles.modeTabActive]}
             onPress={() => {
               setActiveMode('quiz');
               setIsFlipped(false);
             }}
+            activeOpacity={0.8}
           >
             <Text style={[styles.modeTabText, activeMode === 'quiz' && styles.modeTabTextActive]}>
-              🎯 Quizizz Mode
+              Practice Quiz
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.modeTab, activeMode === 'flashcards' && styles.modeTabActive]}
+            style={[styles.modeTab, activeMode === 'flip' && styles.modeTabActive]}
             onPress={() => {
-              setActiveMode('flashcards');
+              setActiveMode('flip');
               setSelectedOption(null);
               setIsAnswered(false);
             }}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.modeTabText, activeMode === 'flashcards' && styles.modeTabTextActive]}>
-              🗂 Flashcard Flip
+            <Text style={[styles.modeTabText, activeMode === 'flip' && styles.modeTabTextActive]}>
+              Flip Study
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Deck Filters */}
-        <View style={styles.filterRow}>
-          {(['all', 'built-in', 'custom'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              onPress={() => setDeckFilter(filter)}
-              style={[
-                styles.filterChip,
-                deckFilter === filter && { backgroundColor: colors.primary, borderColor: colors.primary },
-              ]}
-            >
-              <Text
+        {/* Filter Chips Strip */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterStrip}>
+          {[
+            { key: 'all', label: 'All Cards' },
+            { key: 'root-finding', label: 'Roots' },
+            { key: 'interpolation', label: 'Interpolation' },
+            { key: 'custom', label: 'My Cards' },
+          ].map((item) => {
+            const isSelected = deckFilter === item.key;
+            return (
+              <TouchableOpacity
+                key={item.key}
+                onPress={() => setDeckFilter(item.key as typeof deckFilter)}
                 style={[
-                  styles.filterChipText,
-                  deckFilter === filter ? styles.textWhite : { color: colors.textSecondary },
+                  styles.filterChip,
+                  isSelected
+                    ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                    : { backgroundColor: colors.surface, borderColor: colors.border },
                 ]}
+                activeOpacity={0.7}
               >
-                {filter === 'all' ? 'All (20+)' : filter === 'built-in' ? 'Standard' : 'My Q&A'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity onPress={handleShuffleDeck} style={styles.shuffleBtn}>
-            <Text style={[styles.shuffleText, { color: colors.primary }]}>🔀 Shuffle</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.mainScroll} showsVerticalScrollIndicator={false}>
-        {currentQ ? (
-          <>
-            {/* QUIZIZZ MODE */}
-            {activeMode === 'quiz' && (
-              <View style={styles.quizArea}>
-                {/* Center Question Card (Image 1 Vibe) */}
-                <View
+                <Text
                   style={[
-                    styles.questionCard,
-                    isDark ? styles.questionCardDark : styles.questionCardLight,
+                    styles.filterChipText,
+                    isSelected ? styles.textWhite : { color: colors.textSecondary },
                   ]}
                 >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Workspace Area */}
+      <ScrollView contentContainerStyle={styles.scrollArea} showsVerticalScrollIndicator={false}>
+        {currentQ ? (
+          <>
+            {/* 1. PRACTICE QUIZ MODE (Reference: 4 Stacked Option Cards with Checkboxes) */}
+            {activeMode === 'quiz' && (
+              <View style={styles.practiceContainer}>
+                {/* Question Card */}
+                <View style={[styles.questionBox, isDark ? styles.questionBoxDark : styles.questionBoxLight]}>
                   {currentQ.isCustom && (
-                    <View style={styles.customBadgeRow}>
-                      <View style={styles.customTag}>
-                        <Text style={styles.customTagText}>Custom Q&A</Text>
+                    <View style={styles.cardTagRow}>
+                      <View style={styles.customBadge}>
+                        <Text style={styles.customBadgeText}>Custom Card</Text>
                       </View>
                       <TouchableOpacity onPress={handleDeleteCurrent} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Text style={styles.deleteTagText}>✕ Delete</Text>
+                        <Text style={styles.deleteText}>✕ Delete</Text>
                       </TouchableOpacity>
                     </View>
                   )}
-                  <Text style={styles.questionCardText}>{currentQ.question}</Text>
+                  <Text style={[styles.questionText, { color: colors.textPrimary }]}>{currentQ.question}</Text>
                 </View>
 
-                {/* 4 Quizizz-Style Answer Tiles */}
-                <View style={styles.tilesContainer}>
-                  {currentQ.options.map((opt, idx) => {
+                {/* Stack of 4 Colored Options */}
+                <View style={styles.optionsStack}>
+                  {currentQ.options.map((optionText, idx) => {
                     const isSelected = selectedOption === idx;
                     const isCorrect = idx === currentQ.correctIndex;
+                    const baseColor = OPTION_CARD_COLORS[idx % OPTION_CARD_COLORS.length];
 
-                    let tileColor = QUIZ_TILE_COLORS[idx];
-                    let borderStyle = {};
+                    let cardBg = baseColor;
+                    let outlineStyle = {};
 
                     if (isAnswered) {
                       if (isCorrect) {
-                        tileColor = '#10B981'; // Green for correct
-                        borderStyle = { borderWidth: 3, borderColor: '#FFFFFF' };
+                        cardBg = '#10B981'; // Green for correct
+                        outlineStyle = { borderWidth: 2.5, borderColor: '#FFFFFF' };
                       } else if (isSelected && !isCorrect) {
-                        tileColor = '#DC2626'; // Deep Red for wrong choice
-                        borderStyle = { borderWidth: 3, borderColor: '#FFFFFF' };
+                        cardBg = '#DC2626'; // Red for wrong selected choice
+                        outlineStyle = { borderWidth: 2.5, borderColor: '#FFFFFF' };
                       } else {
-                        // Dim unchosen wrong options
-                        tileColor = tileColor + '75';
+                        // Dim others
+                        cardBg = baseColor + '65';
                       }
                     }
 
@@ -346,30 +338,30 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
                       <TouchableOpacity
                         key={idx}
                         activeOpacity={0.8}
-                        style={[styles.tile, { backgroundColor: tileColor }, borderStyle]}
+                        style={[styles.optionCard, { backgroundColor: cardBg }, outlineStyle]}
                         onPress={() => handleSelectOption(idx)}
                         disabled={isAnswered}
                       >
-                        {/* Corner Index Badge (1, 2, 3, 4) */}
-                        <View style={styles.tileBadge}>
-                          <Text style={styles.tileBadgeText}>{idx + 1}</Text>
+                        <Text style={styles.optionCardText}>{optionText}</Text>
+
+                        {/* Right-aligned Checkbox Frame */}
+                        <View style={styles.checkboxFrame}>
+                          {isAnswered && isCorrect && <Text style={styles.checkboxSymbol}>✓</Text>}
+                          {isAnswered && isSelected && !isCorrect && (
+                            <Text style={styles.checkboxSymbol}>✕</Text>
+                          )}
                         </View>
-                        <Text style={styles.tileText}>{opt}</Text>
-                        {isAnswered && isCorrect && <Text style={styles.tileCheckmark}>✓ Correct</Text>}
-                        {isAnswered && isSelected && !isCorrect && (
-                          <Text style={styles.tileWrongMark}>✕ Incorrect</Text>
-                        )}
                       </TouchableOpacity>
                     );
                   })}
                 </View>
 
-                {/* Feedback & Explanation Card after Answer */}
+                {/* Concept Feedback & Next Button */}
                 {isAnswered && (
                   <View
                     style={[
-                      styles.explanationCard,
-                      isDark ? styles.explanationCardDark : styles.explanationCardLight,
+                      styles.explanationPanel,
+                      isDark ? styles.explanationDark : styles.explanationLight,
                       { borderColor: colors.border },
                     ]}
                   >
@@ -380,17 +372,19 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
                           selectedOption === currentQ.correctIndex ? styles.textSuccess : styles.textDanger,
                         ]}
                       >
-                        {selectedOption === currentQ.correctIndex ? '✨ Excellent! Correct Answer' : '💡 Review Concept'}
+                        {selectedOption === currentQ.correctIndex ? '✓ Correct Answer' : '✕ Review Concept'}
                       </Text>
+
                       <TouchableOpacity
                         style={[styles.nextBtn, { backgroundColor: colors.primary }]}
                         onPress={handleNext}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.nextBtnText}>Next Question →</Text>
+                        <Text style={styles.nextBtnText}>Next Card →</Text>
                       </TouchableOpacity>
                     </View>
-                    <Text style={[styles.explanationBody, { color: colors.textSecondary }]}>
+
+                    <Text style={[styles.explanationText, { color: colors.textSecondary }]}>
                       {currentQ.explanation}
                     </Text>
                   </View>
@@ -398,49 +392,49 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
               </View>
             )}
 
-            {/* FLASHCARD STUDY FLIP MODE */}
-            {activeMode === 'flashcards' && (
-              <View style={styles.flashcardArea}>
+            {/* 2. FLIP STUDY MODE */}
+            {activeMode === 'flip' && (
+              <View style={styles.flipContainer}>
                 <TouchableOpacity
                   activeOpacity={0.9}
                   style={[
-                    styles.flipCard,
+                    styles.flipCardHero,
                     isFlipped
                       ? isDark
-                        ? styles.flipCardFlippedDark
-                        : styles.flipCardFlippedLight
+                        ? styles.flipFlippedDark
+                        : styles.flipFlippedLight
                       : isDark
-                      ? styles.flipCardUnflippedDark
-                      : styles.flipCardUnflippedLight,
+                      ? styles.flipUnflippedDark
+                      : styles.flipUnflippedLight,
                   ]}
                   onPress={() => setIsFlipped(!isFlipped)}
                 >
-                  <View style={styles.flipCardHeader}>
-                    <Text style={styles.flipCardCategory}>
-                      {isFlipped ? '💡 ANSWER & CONCEPT' : '❓ QUESTION (TAP TO FLIP)'}
+                  <View style={styles.flipTopRow}>
+                    <Text style={styles.flipBadge}>
+                      {isFlipped ? '💡 ANSWER & THEOREM' : '❓ QUESTION (TAP TO FLIP)'}
                     </Text>
                     {currentQ.isCustom && (
                       <TouchableOpacity onPress={handleDeleteCurrent}>
-                        <Text style={styles.deleteTagText}>✕ Delete</Text>
+                        <Text style={styles.deleteText}>✕ Delete</Text>
                       </TouchableOpacity>
                     )}
                   </View>
 
                   {!isFlipped ? (
-                    <View style={styles.flipCardCenter}>
-                      <Text style={styles.flipQuestionText}>{currentQ.question}</Text>
-                      <Text style={styles.flipHintText}>Tap anywhere to reveal correct answer & breakdown</Text>
+                    <View style={styles.flipCenterContent}>
+                      <Text style={[styles.flipQuestion, { color: colors.textPrimary }]}>{currentQ.question}</Text>
+                      <Text style={styles.flipPrompt}>Tap card to reveal answer & formula</Text>
                     </View>
                   ) : (
-                    <View style={styles.flipCardCenter}>
-                      <View style={styles.correctPill}>
-                        <Text style={styles.correctPillText}>
+                    <View style={styles.flipCenterContent}>
+                      <View style={styles.flipAnswerPill}>
+                        <Text style={styles.flipAnswerText}>
                           ✓ {currentQ.options[currentQ.correctIndex]}
                         </Text>
                       </View>
                       <Text
                         style={[
-                          styles.flipExplanationText,
+                          styles.flipExplanation,
                           isDark ? styles.flipExplanationDark : styles.flipExplanationLight,
                         ]}
                       >
@@ -450,10 +444,10 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
                   )}
                 </TouchableOpacity>
 
-                {/* Flip Navigation Controls */}
-                <View style={styles.flipControls}>
+                {/* Flip Dock Navigation */}
+                <View style={styles.flipDock}>
                   <TouchableOpacity
-                    style={[styles.flipNavBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    style={[styles.dockBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => {
                       if (currentIndex > 0) {
                         setCurrentIndex((prev) => prev - 1);
@@ -462,13 +456,18 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
                     }}
                     disabled={currentIndex === 0}
                   >
-                    <Text style={[styles.flipNavBtnText, { color: currentIndex === 0 ? colors.textMuted : colors.textPrimary }]}>
+                    <Text
+                      style={[
+                        styles.dockBtnText,
+                        { color: currentIndex === 0 ? colors.textMuted : colors.textPrimary },
+                      ]}
+                    >
                       ← Previous
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.flipNavBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    style={[styles.dockBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => {
                       if (currentIndex < questions.length - 1) {
                         setCurrentIndex((prev) => prev + 1);
@@ -478,7 +477,7 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
                       }
                     }}
                   >
-                    <Text style={[styles.flipNavBtnText, styles.textWhite]}>
+                    <Text style={[styles.dockBtnText, styles.textWhite]}>
                       {currentIndex < questions.length - 1 ? 'Next Card →' : 'Restart Deck ↺'}
                     </Text>
                   </TouchableOpacity>
@@ -488,27 +487,27 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
           </>
         ) : (
           <View style={[styles.emptyBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Questions in Deck</Text>
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Cards in this Category</Text>
             <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
-              There are no questions matching the current filter. Tap "+ New" above to create your own!
+              Tap "+ Create" in the top bar to create custom study flashcards.
             </Text>
           </View>
         )}
       </ScrollView>
 
-      {/* CREATE CUSTOM Q&A MODAL */}
+      {/* CREATE CUSTOM FLASHCARD MODAL */}
       <Modal visible={isModalOpen} animationType="slide" transparent>
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Create Study Card</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Create Flashcard</Text>
               <TouchableOpacity onPress={() => setIsModalOpen(false)}>
                 <Text style={[styles.modalClose, { color: colors.textMuted }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
-              <Text style={[styles.modalInputLabel, { color: colors.textSecondary }]}>Question / Problem Statement:</Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalForm}>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Question / Formula Problem:</Text>
               <TextInput
                 style={[styles.modalInput, { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary, borderColor: colors.border }]}
                 placeholder="e.g. What is the convergence rate of Newton-Raphson?"
@@ -518,27 +517,27 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
                 multiline
               />
 
-              <Text style={[styles.modalInputLabel, { color: colors.textSecondary }]}>Answer Options (Tap circle to set correct):</Text>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>4 Choices (Tap number to mark correct):</Text>
 
               {[
-                { val: customOpt0, setVal: setCustomOpt0, idx: 0, color: QUIZ_TILE_COLORS[0] },
-                { val: customOpt1, setVal: setCustomOpt1, idx: 1, color: QUIZ_TILE_COLORS[1] },
-                { val: customOpt2, setVal: setCustomOpt2, idx: 2, color: QUIZ_TILE_COLORS[2] },
-                { val: customOpt3, setVal: setCustomOpt3, idx: 3, color: QUIZ_TILE_COLORS[3] },
+                { val: customOpt0, setVal: setCustomOpt0, idx: 0, color: OPTION_CARD_COLORS[0] },
+                { val: customOpt1, setVal: setCustomOpt1, idx: 1, color: OPTION_CARD_COLORS[1] },
+                { val: customOpt2, setVal: setCustomOpt2, idx: 2, color: OPTION_CARD_COLORS[2] },
+                { val: customOpt3, setVal: setCustomOpt3, idx: 3, color: OPTION_CARD_COLORS[3] },
               ].map((item) => (
-                <View key={item.idx} style={styles.optionInputRow}>
+                <View key={item.idx} style={styles.optionRow}>
                   <TouchableOpacity
                     style={[
-                      styles.radioBtn,
+                      styles.choiceBadge,
                       { borderColor: item.color },
                       customCorrectIdx === item.idx && { backgroundColor: item.color },
                     ]}
                     onPress={() => setCustomCorrectIdx(item.idx)}
                   >
-                    <Text style={styles.radioText}>{item.idx + 1}</Text>
+                    <Text style={styles.choiceBadgeText}>{item.idx + 1}</Text>
                   </TouchableOpacity>
                   <TextInput
-                    style={[styles.modalInputRow, { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary, borderColor: colors.border }]}
+                    style={[styles.optionInput, { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary, borderColor: colors.border }]}
                     placeholder={`Option ${item.idx + 1}`}
                     placeholderTextColor={colors.textMuted}
                     value={item.val}
@@ -547,10 +546,10 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
                 </View>
               ))}
 
-              <Text style={[styles.modalInputLabel, { color: colors.textSecondary }]}>Explanation / Concept Breakdown:</Text>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Explanation / Mathematical Theorem:</Text>
               <TextInput
                 style={[styles.modalInput, { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary, borderColor: colors.border }]}
-                placeholder="Why is this answer correct? Provide the formula or theorem."
+                placeholder="Why is this answer correct? Add the theorem or equation."
                 placeholderTextColor={colors.textMuted}
                 value={customExplanation}
                 onChangeText={setCustomExplanation}
@@ -558,10 +557,10 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
               />
 
               <TouchableOpacity
-                style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]}
+                style={[styles.modalSubmitBtn, { backgroundColor: colors.primary }]}
                 onPress={handleCreateQuestion}
               >
-                <Text style={styles.modalSaveBtnText}>Save Card to Deck</Text>
+                <Text style={styles.modalSubmitBtnText}>Add Card to Deck</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -571,20 +570,38 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onBack }) => {
   );
 };
 
+export const FlashcardsScreen = QuizScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topHud: {
+  containerDark: {
+    backgroundColor: '#0F172A',
+  },
+  containerLight: {
+    backgroundColor: '#F8FAFC',
+  },
+  topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  headerDark: {
+    backgroundColor: '#1E293B',
+  },
+  headerLight: {
+    backgroundColor: '#FFFFFF',
+  },
+  headerLeftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  hudBackBtn: {
+  backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -592,53 +609,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  hudBackText: {
+  backBtnText: {
     fontSize: 18,
     fontWeight: '800',
   },
-  hudPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  hudPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-  },
-  flameIcon: {
-    fontSize: 15,
-  },
-  streakText: {
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.2,
-  },
-  addBtn: {
+  counterPill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
+    borderWidth: 1,
   },
-  addBtnText: {
+  counterPillText: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  headerRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionIconText: {
+    fontSize: 15,
+  },
+  createBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 14,
+  },
+  createBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '800',
   },
-  controlsBar: {
+  progressBarTrack: {
+    height: 4,
+    width: '100%',
+  },
+  progressBarTrackDark: {
+    backgroundColor: '#1E293B',
+  },
+  progressBarTrackLight: {
+    backgroundColor: '#E2E8F0',
+  },
+  progressBarFill: {
+    height: '100%',
+  },
+  controlsRow: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 10,
   },
-  segmentedMode: {
+  controlsDark: {
+    backgroundColor: '#1E293B99',
+  },
+  controlsLight: {
+    backgroundColor: '#F1F5F9',
+  },
+  modeSegment: {
     flexDirection: 'row',
-    backgroundColor: '#0F172A20',
+    backgroundColor: '#33415525',
     borderRadius: 14,
     padding: 3,
   },
@@ -646,14 +684,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 11,
   },
   modeTabActive: {
     backgroundColor: '#FFFFFF',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3 },
-      android: { elevation: 2 },
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   modeTabText: {
     fontSize: 12,
@@ -664,134 +703,123 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontWeight: '900',
   },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  filterStrip: {
     gap: 8,
+    paddingVertical: 2,
   },
   filterChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
   },
   filterChipText: {
     fontSize: 11,
     fontWeight: '700',
   },
-  shuffleBtn: {
-    marginLeft: 'auto',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  shuffleText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  mainScroll: {
+  scrollArea: {
     padding: 16,
     paddingBottom: 90,
   },
-  quizArea: {
+  practiceContainer: {
     gap: 14,
   },
-  questionCard: {
-    padding: 24,
-    borderRadius: 22,
-    minHeight: 140,
+  questionBox: {
+    padding: 22,
+    borderRadius: 20,
+    minHeight: 120,
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  customBadgeRow: {
+  questionBoxDark: {
+    backgroundColor: '#1E293B',
+  },
+  questionBoxLight: {
+    backgroundColor: '#FFFFFF',
+  },
+  cardTagRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  customTag: {
-    backgroundColor: '#38BDF830',
+  customBadge: {
+    backgroundColor: '#38BDF825',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
   },
-  customTagText: {
-    color: '#38BDF8',
+  customBadgeText: {
+    color: '#0284C7',
     fontSize: 10,
     fontWeight: '800',
   },
-  deleteTagText: {
-    color: '#F87171',
+  deleteText: {
+    color: '#EF4444',
     fontSize: 11,
     fontWeight: '700',
   },
-  questionCardText: {
-    color: '#FFFFFF',
+  questionText: {
     fontSize: 18,
     fontWeight: '800',
     lineHeight: 26,
     textAlign: 'center',
   },
-  tilesContainer: {
-    gap: 12,
+  optionsStack: {
+    gap: 10,
   },
-  tile: {
-    padding: 18,
-    borderRadius: 18,
-    position: 'relative',
-    minHeight: 74,
-    justifyContent: 'center',
+  optionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 16,
+    minHeight: 58,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
     elevation: 2,
   },
-  tileBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 12,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  tileText: {
+  optionCardText: {
+    flex: 1,
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
-    lineHeight: 22,
-    paddingRight: 26,
+    lineHeight: 20,
+    paddingRight: 12,
   },
-  tileCheckmark: {
-    marginTop: 6,
+  checkboxFrame: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSymbol: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '900',
   },
-  tileWrongMark: {
-    marginTop: 6,
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  explanationCard: {
-    padding: 18,
-    borderRadius: 20,
+  explanationPanel: {
+    padding: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    marginTop: 4,
+    marginTop: 6,
     gap: 10,
+  },
+  explanationDark: {
+    backgroundColor: '#1E293B',
+  },
+  explanationLight: {
+    backgroundColor: '#FFFFFF',
   },
   explanationHeader: {
     flexDirection: 'row',
@@ -804,87 +832,108 @@ const styles = StyleSheet.create({
   },
   nextBtn: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
   nextBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '800',
   },
-  explanationBody: {
+  explanationText: {
     fontSize: 13,
     lineHeight: 20,
     fontWeight: '500',
   },
-  flashcardArea: {
+  flipContainer: {
     gap: 16,
   },
-  flipCard: {
-    minHeight: 260,
+  flipCardHero: {
+    minHeight: 270,
     borderRadius: 24,
     borderWidth: 2,
     padding: 22,
     justifyContent: 'space-between',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  flipCardHeader: {
+  flipUnflippedDark: {
+    backgroundColor: '#1E293B',
+    borderColor: '#3B82F6',
+  },
+  flipUnflippedLight: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#3B82F6',
+  },
+  flipFlippedDark: {
+    backgroundColor: '#064E3B',
+    borderColor: '#10B981',
+  },
+  flipFlippedLight: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#10B981',
+  },
+  flipTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  flipCardCategory: {
-    color: '#A5B4FC',
+  flipBadge: {
+    color: '#60A5FA',
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
-  flipCardCenter: {
+  flipCenterContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 20,
-    gap: 16,
+    gap: 14,
   },
-  flipQuestionText: {
-    color: '#FFFFFF',
-    fontSize: 20,
+  flipQuestion: {
+    fontSize: 19,
     fontWeight: '800',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 27,
   },
-  flipHintText: {
-    color: '#C7D2FE',
+  flipPrompt: {
+    color: '#94A3B8',
     fontSize: 12,
     fontWeight: '600',
   },
-  correctPill: {
+  flipAnswerPill: {
     backgroundColor: '#10B981',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 16,
+    borderRadius: 14,
   },
-  correctPillText: {
+  flipAnswerText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '900',
     textAlign: 'center',
   },
-  flipExplanationText: {
+  flipExplanation: {
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',
     fontWeight: '600',
   },
-  flipControls: {
+  flipExplanationDark: {
+    color: '#D1FAE5',
+  },
+  flipExplanationLight: {
+    color: '#065F46',
+  },
+  flipDock: {
     flexDirection: 'row',
     gap: 12,
   },
-  flipNavBtn: {
+  dockBtn: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
@@ -892,7 +941,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flipNavBtnText: {
+  dockBtnText: {
     fontSize: 14,
     fontWeight: '800',
   },
@@ -901,7 +950,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     marginTop: 40,
   },
   emptyTitle: {
@@ -918,7 +967,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
+  modalCard: {
     maxHeight: '85%',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -940,10 +989,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     padding: 4,
   },
-  modalScroll: {
+  modalForm: {
     marginBottom: 20,
   },
-  modalInputLabel: {
+  modalLabel: {
     fontSize: 12,
     fontWeight: '800',
     marginTop: 12,
@@ -955,13 +1004,13 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
   },
-  optionInputRow: {
+  optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginBottom: 8,
   },
-  radioBtn: {
+  choiceBadge: {
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -969,25 +1018,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioText: {
+  choiceBadgeText: {
     fontSize: 12,
     fontWeight: '900',
     color: '#FFFFFF',
   },
-  modalInputRow: {
+  optionInput: {
     flex: 1,
     borderRadius: 12,
     borderWidth: 1,
     padding: 10,
     fontSize: 13,
   },
-  modalSaveBtn: {
+  modalSubmitBtn: {
     marginTop: 20,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
   },
-  modalSaveBtnText: {
+  modalSubmitBtnText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
@@ -995,68 +1044,10 @@ const styles = StyleSheet.create({
   textWhite: {
     color: '#FFFFFF',
   },
-  containerDark: {
-    backgroundColor: '#0B0F19',
-  },
-  containerLight: {
-    backgroundColor: '#F1F5F9',
-  },
-  topHudDark: {
-    backgroundColor: '#111827',
-  },
-  topHudLight: {
-    backgroundColor: '#FFFFFF',
-  },
-  streakBadgeActive: {
-    backgroundColor: '#FEF2F2',
-  },
-  streakTextActive: {
-    color: '#DC2626',
-  },
-  controlsBarDark: {
-    backgroundColor: '#131D31',
-  },
-  controlsBarLight: {
-    backgroundColor: '#E2E8F0',
-  },
-  questionCardDark: {
-    backgroundColor: '#1E1B4B',
-  },
-  questionCardLight: {
-    backgroundColor: '#312E81',
-  },
-  explanationCardDark: {
-    backgroundColor: '#1F2937',
-  },
-  explanationCardLight: {
-    backgroundColor: '#FFFFFF',
-  },
   textSuccess: {
     color: '#10B981',
   },
   textDanger: {
     color: '#EF4444',
-  },
-  flipCardUnflippedDark: {
-    backgroundColor: '#1E1B4B',
-    borderColor: '#6366F1',
-  },
-  flipCardUnflippedLight: {
-    backgroundColor: '#312E81',
-    borderColor: '#6366F1',
-  },
-  flipCardFlippedDark: {
-    backgroundColor: '#064E3B',
-    borderColor: '#10B981',
-  },
-  flipCardFlippedLight: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#10B981',
-  },
-  flipExplanationDark: {
-    color: '#D1FAE5',
-  },
-  flipExplanationLight: {
-    color: '#065F46',
   },
 });
