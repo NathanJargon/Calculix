@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Alert,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -229,7 +228,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
         label="Estimate Value at (x*)"
         prefix="x* ="
         placeholder="e.g. 2.5"
-        keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+        keyboardType="default"
         value={targetXInput}
         onChangeText={(text) => {
           setTargetXInput(text);
@@ -282,7 +281,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
           <View style={[styles.inputCell, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <TextInput
               style={[Typography.mono, styles.coordInput, { color: colors.textPrimary }]}
-              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+              keyboardType="default"
               placeholderTextColor={colors.textMuted}
               value={p.rawX !== undefined ? p.rawX : String(p.x)}
               onChangeText={(t) => updatePoint(index, 'x', t)}
@@ -292,7 +291,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
           <View style={[styles.inputCell, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <TextInput
               style={[Typography.mono, styles.coordInput, { color: colors.textPrimary }]}
-              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
+              keyboardType="default"
               placeholderTextColor={colors.textMuted}
               value={p.rawY !== undefined ? p.rawY : String(p.y)}
               onChangeText={(t) => updatePoint(index, 'y', t)}

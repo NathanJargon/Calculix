@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -77,6 +78,7 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
 
   const [points, setPoints] = useState<DataPoint[]>(DEFAULT_POINTS);
   const [targetX, setTargetX] = useState<number>(2.5);
+  const [activeDeckTab, setActiveDeckTab] = useState<'points' | 'solution' | 'matrix'>('points');
   const [isSolving, setIsSolving] = useState(false);
 
   const [result, setResult] = useState<InterpolationResult | null>(() =>
@@ -98,6 +100,7 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
       const res = solveInterpolation(input);
       setResult(res);
       setIsSolving(false);
+      setActiveDeckTab('solution');
       if (res.interpolatedY !== null) {
         onCalculationCompleted();
       }
@@ -180,64 +183,160 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
         </ScrollView>
       </View>
 
+      {/* Segmented Workspace Controller */}
+      <View style={[styles.deckBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.deckTab,
+            activeDeckTab === 'points' ? [styles.deckTabActive, { borderColor: cfg.accentColor, backgroundColor: cfg.accentColor + '15' }] : null,
+          ]}
+          onPress={() => setActiveDeckTab('points')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.deckTabText,
+              activeDeckTab === 'points' ? [styles.deckTabTextActive, { color: cfg.accentColor }] : { color: colors.textSecondary },
+            ]}
+          >
+            Data Points
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.deckTab,
+            activeDeckTab === 'solution' ? [styles.deckTabActive, { borderColor: cfg.accentColor, backgroundColor: cfg.accentColor + '15' }] : null,
+          ]}
+          onPress={() => setActiveDeckTab('solution')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.deckTabText,
+              activeDeckTab === 'solution' ? [styles.deckTabTextActive, { color: cfg.accentColor }] : { color: colors.textSecondary },
+            ]}
+          >
+            Solution & Curve
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.deckTab,
+            activeDeckTab === 'matrix' ? [styles.deckTabActive, { borderColor: cfg.accentColor, backgroundColor: cfg.accentColor + '15' }] : null,
+          ]}
+          onPress={() => setActiveDeckTab('matrix')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.deckTabText,
+              activeDeckTab === 'matrix' ? [styles.deckTabTextActive, { color: cfg.accentColor }] : { color: colors.textSecondary },
+            ]}
+          >
+            {method === 'newton-divided' ? 'Diff Matrix' : 'Basis Polynomials'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Explanation Card */}
-        <View
-          style={[
-            styles.infoCard,
-            {
-              backgroundColor: isDark ? cfg.accentColor + '18' : cfg.accentColor + '12',
-              borderLeftColor: cfg.accentColor,
-            },
-          ]}
-        >
-          <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
-            {cfg.description}
-          </Text>
-        </View>
-
-        {/* Dynamic Coordinate Point List Editor */}
-        <PointListEditor
-          method={method}
-          points={points}
-          targetX={targetX}
-          onPointsChange={(newPoints) => {
-            setPoints(newPoints);
-          }}
-          onTargetXChange={(newTarget) => {
-            setTargetX(newTarget);
-          }}
-          onSolve={handleSolve}
-          isSolving={isSolving}
-        />
-
-        {/* Visual Graph Plotter */}
+        {/* Visual Graph Plotter at Top */}
         <InterpolationPlotter
           points={points}
           targetX={targetX}
           interpolatedY={result?.interpolatedY}
         />
 
-        {/* Results Card */}
-        {result && <InterpolationResults result={result} />}
-
-        {/* Newton's Divided Difference Table & Term Breakdown */}
-        {result && method === 'newton-divided' && result.newtonTable && (
-          <DividedDiffTable
-            headers={result.newtonTable.headers}
-            matrix={result.newtonTable.matrix}
-            points={result.points}
-            terms={result.newtonTable.terms}
-          />
+        {/* Loading Indicator */}
+        {isSolving && (
+          <View style={[styles.solvingOverlay, { backgroundColor: cfg.accentColor + '15', borderColor: cfg.accentColor }]}>
+            <ActivityIndicator size="small" color={cfg.accentColor} />
+            <Text style={[styles.solvingText, { color: cfg.accentColor }]}>Computing interpolation polynomial...</Text>
+          </View>
         )}
 
-        {/* Lagrange Basis Polynomials Table */}
-        {result && method === 'lagrange' && result.lagrangeTerms && (
-          <LagrangeBasisTable terms={result.lagrangeTerms} />
+        {/* TAB 1: Points & Estimation Target */}
+        {activeDeckTab === 'points' && (
+          <>
+            {/* Explanation Card */}
+            <View
+              style={[
+                styles.infoCard,
+                {
+                  backgroundColor: isDark ? cfg.accentColor + '18' : cfg.accentColor + '12',
+                  borderLeftColor: cfg.accentColor,
+                },
+              ]}
+            >
+              <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
+                {cfg.description}
+              </Text>
+            </View>
+
+            {/* Dynamic Coordinate Point List Editor */}
+            <PointListEditor
+              method={method}
+              points={points}
+              targetX={targetX}
+              onPointsChange={(newPoints) => {
+                setPoints(newPoints);
+              }}
+              onTargetXChange={(newTarget) => {
+                setTargetX(newTarget);
+              }}
+              onSolve={handleSolve}
+              isSolving={isSolving}
+            />
+          </>
+        )}
+
+        {/* TAB 2: Solution & Curve Results */}
+        {activeDeckTab === 'solution' && (
+          <>
+            {result ? (
+              <InterpolationResults result={result} />
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Solution Yet</Text>
+                <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                  Configure coordinates and tap "Calculate Interpolation" to solve.
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* TAB 3: Difference Matrix / Basis Polynomials */}
+        {activeDeckTab === 'matrix' && (
+          <>
+            {result ? (
+              <>
+                {method === 'newton-divided' && result.newtonTable && (
+                  <DividedDiffTable
+                    headers={result.newtonTable.headers}
+                    matrix={result.newtonTable.matrix}
+                    points={result.points}
+                    terms={result.newtonTable.terms}
+                  />
+                )}
+                {method === 'lagrange' && result.lagrangeTerms && (
+                  <LagrangeBasisTable terms={result.lagrangeTerms} />
+                )}
+              </>
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Matrix Data</Text>
+                <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                  Compute interpolation to populate the triangular divided difference table or basis polynomials.
+                </Text>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -341,6 +440,63 @@ const styles = StyleSheet.create({
   },
   textWhite: {
     color: '#FFFFFF',
+  },
+  deckBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    gap: 8,
+  },
+  deckTab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  deckTabActive: {
+    borderWidth: 1,
+  },
+  deckTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  deckTabTextActive: {
+    fontWeight: '800',
+  },
+  solvingOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 14,
+    gap: 10,
+  },
+  solvingText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyCard: {
+    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptySub: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 

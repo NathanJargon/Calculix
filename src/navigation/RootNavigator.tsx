@@ -17,6 +17,7 @@ import { HomeScreen, SolverId } from '../screens/HomeScreen';
 import { DedicatedSolverScreen } from '../screens/DedicatedSolverScreen';
 import { DedicatedInterpolationScreen } from '../screens/DedicatedInterpolationScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { QuizScreen } from '../screens/QuizScreen';
 import { TheoryGuideModal } from '../screens/TheoryGuideModal';
 import { HistoryModal } from '../screens/HistoryModal';
 import { HistoryItem } from '../services/historyService';
@@ -32,7 +33,7 @@ const Tab = createBottomTabNavigator();
 
 // Minimal SVG-style geometric tab icons
 const TabIcon: React.FC<{
-  type: 'home' | 'settings';
+  type: 'home' | 'quiz' | 'settings';
   focused: boolean;
   color: string;
 }> = ({ type, focused, color }) => {
@@ -54,6 +55,13 @@ const TabIcon: React.FC<{
         </View>
       )}
 
+      {type === 'quiz' && (
+        <View style={styles.cardsIcon}>
+          <View style={[styles.cardLayer1, { borderColor: color }]} />
+          <View style={[styles.cardLayer2, { borderColor: color, backgroundColor: colors.surface }]} />
+        </View>
+      )}
+
       {type === 'settings' && (
         <View style={styles.gearIcon}>
           <View style={[styles.gearRing, { borderColor: color }]}>
@@ -69,6 +77,10 @@ const HomeTabIcon = ({ focused, color }: { focused: boolean; color: string; size
   <TabIcon type="home" focused={focused} color={color} />
 );
 
+const QuizTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
+  <TabIcon type="quiz" focused={focused} color={color} />
+);
+
 const SettingsTabIcon = ({ focused, color }: { focused: boolean; color: string; size: number }): React.JSX.Element => (
   <TabIcon type="settings" focused={focused} color={color} />
 );
@@ -79,8 +91,9 @@ const LeftDrawerModal: React.FC<{
   onClose: () => void;
   onOpenGuide: () => void;
   onOpenHistory: () => void;
+  onNavigateQuiz: () => void;
   onNavigateSettings: () => void;
-}> = ({ visible, onClose, onOpenGuide, onOpenHistory, onNavigateSettings }) => {
+}> = ({ visible, onClose, onOpenGuide, onOpenHistory, onNavigateQuiz, onNavigateSettings }) => {
   const { colors, isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
   const panelWidth = Math.min(width * 0.78, 320);
@@ -150,6 +163,27 @@ const LeftDrawerModal: React.FC<{
                   </Text>
                   <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
                     Recent calculations
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  onClose();
+                  onNavigateQuiz();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.drawerItemIconBox, styles.drawerQuizIconBox]}>
+                  <Text style={[styles.drawerItemIcon, styles.drawerQuizIcon]}>⚡</Text>
+                </View>
+                <View style={styles.drawerItemTextGroup}>
+                  <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
+                    Quizizz & Cards
+                  </Text>
+                  <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
+                    Quizzes, streaks & study deck
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -373,6 +407,16 @@ export const RootNavigator: React.FC = () => {
             )}
           </Tab.Screen>
 
+          {/* Flashcards & Quizzes (Quizizz Experience) */}
+          <Tab.Screen
+            name="Quiz"
+            options={{
+              tabBarIcon: QuizTabIcon,
+            }}
+          >
+            {() => <QuizScreen />}
+          </Tab.Screen>
+
           {/* Preferences and Settings */}
           <Tab.Screen
             name="Settings"
@@ -390,7 +434,14 @@ export const RootNavigator: React.FC = () => {
           onClose={() => setMenuOpen(false)}
           onOpenGuide={() => setGuideOpen(true)}
           onOpenHistory={() => setHistoryOpen(true)}
+          onNavigateQuiz={() => {
+            setActiveSolver(null);
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('Quiz');
+            }
+          }}
           onNavigateSettings={() => {
+            setActiveSolver(null);
             if (navigationRef.isReady()) {
               navigationRef.navigate('Settings');
             }
@@ -454,6 +505,32 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
+  },
+  cardsIcon: {
+    width: 22,
+    height: 22,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardLayer1: {
+    position: 'absolute',
+    width: 14,
+    height: 16,
+    borderRadius: 3,
+    borderWidth: 1.5,
+    top: 2,
+    left: 2,
+    opacity: 0.6,
+  },
+  cardLayer2: {
+    position: 'absolute',
+    width: 14,
+    height: 16,
+    borderRadius: 3,
+    borderWidth: 1.5,
+    bottom: 2,
+    right: 2,
   },
   modalOverlay: {
     flex: 1,
@@ -521,6 +598,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+  },
+  drawerQuizIconBox: {
+    backgroundColor: '#FEF3C7',
+  },
+  drawerQuizIcon: {
+    color: '#D97706',
   },
   drawerItemIcon: {
     fontSize: 16,

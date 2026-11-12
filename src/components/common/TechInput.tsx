@@ -139,11 +139,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   inputWrapperFocused: {
-    shadowColor: '#FF2E93',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 2,
   },
   inputWrapperError: {},
   prefixContainer: {

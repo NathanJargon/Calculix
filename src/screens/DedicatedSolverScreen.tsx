@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -153,6 +154,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [activeDeckTab, setActiveDeckTab] = useState<'inputs' | 'steps' | 'table'>('inputs');
   const [isSolving, setIsSolving] = useState(false);
   const [result, setResult] = useState<RootFindingResult | null>(() =>
     solveRoot({
@@ -193,6 +195,7 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
       const res = solveRoot(solverInput);
       setResult(res);
       setIsSolving(false);
+      setActiveDeckTab('steps');
       if (res.root !== null) {
         onCalculationCompleted();
       }
@@ -379,213 +382,69 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
         </ScrollView>
       </View>
 
+      {/* Segmented Workspace Controller */}
+      <View style={[styles.deckBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.deckTab,
+            activeDeckTab === 'inputs' ? [styles.deckTabActive, { borderColor: cfg.accentColor, backgroundColor: cfg.accentColor + '15' }] : null,
+          ]}
+          onPress={() => setActiveDeckTab('inputs')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.deckTabText,
+              activeDeckTab === 'inputs' ? [styles.deckTabTextActive, { color: cfg.accentColor }] : { color: colors.textSecondary },
+            ]}
+          >
+            Inputs
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.deckTab,
+            activeDeckTab === 'steps' ? [styles.deckTabActive, { borderColor: cfg.accentColor, backgroundColor: cfg.accentColor + '15' }] : null,
+          ]}
+          onPress={() => setActiveDeckTab('steps')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.deckTabText,
+              activeDeckTab === 'steps' ? [styles.deckTabTextActive, { color: cfg.accentColor }] : { color: colors.textSecondary },
+            ]}
+          >
+            Solution & Steps
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.deckTab,
+            activeDeckTab === 'table' ? [styles.deckTabActive, { borderColor: cfg.accentColor, backgroundColor: cfg.accentColor + '15' }] : null,
+          ]}
+          onPress={() => setActiveDeckTab('table')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.deckTabText,
+              activeDeckTab === 'table' ? [styles.deckTabTextActive, { color: cfg.accentColor }] : { color: colors.textSecondary },
+            ]}
+          >
+            Iteration Table
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Explanation Card */}
-        <View
-          style={[
-            styles.infoCard,
-            {
-              backgroundColor: isDark ? cfg.accentColor + '18' : cfg.accentColor + '12',
-              borderLeftColor: cfg.accentColor,
-            },
-          ]}
-        >
-          <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
-            {cfg.description}
-          </Text>
-        </View>
-
-        {/* Input Form Card */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {/* Quick Presets */}
-          <View style={[styles.presetsSection, { borderBottomColor: colors.borderLight }]}>
-            <Text style={[styles.presetHeading, { color: colors.textSecondary }]}>Presets:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {cfg.presets.map((preset, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  activeOpacity={0.75}
-                  onPress={() => applyPreset(preset)}
-                  style={[styles.presetChip, { backgroundColor: cfg.accentColor + '20' }]}
-                  accessibilityLabel={`Apply preset ${preset.name}`}
-                  accessibilityRole="button"
-                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                >
-                  <Text style={[styles.presetText, { color: cfg.accentColor }]}>{preset.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Equation Input */}
-          <TechInput
-            label="Target Equation f(x) = 0"
-            prefix="f(x) ="
-            placeholder="e.g. x^3 - 2*x - 5"
-            value={functionStr}
-            onFocus={() => setActiveField('fn')}
-            onSelectionChange={(e) => {
-              fnSelection.current = e.nativeEvent.selection;
-            }}
-            onChangeText={(text) => {
-              setFunctionStr(text);
-            }}
-            onClear={() => {
-              setFunctionStr('');
-              fnSelection.current = { start: 0, end: 0 };
-            }}
-          />
-
-          {/* Quick Keypad */}
-          <MathKeypad
-            onInsert={insertSymbol}
-            onBackspace={backspaceSymbol}
-            onClear={clearActiveSymbol}
-          />
-
-          {/* Specific Inputs based on method */}
-          {method === 'bisection' && (
-            <View style={styles.row}>
-              <View style={styles.halfCol}>
-                <TechInput
-                  label="Start Interval (a)"
-                  prefix="a ="
-                  placeholder="e.g. 1"
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  value={aText}
-                  onChangeText={(t) => setAText(t)}
-                />
-              </View>
-              <View style={styles.halfCol}>
-                <TechInput
-                  label="End Interval (b)"
-                  prefix="b ="
-                  placeholder="e.g. 2"
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  value={bText}
-                  onChangeText={(t) => setBText(t)}
-                />
-              </View>
-            </View>
-          )}
-
-          {method === 'newton' && (
-            <TechInput
-              label="Starting Guess (x₀)"
-              prefix="x₀ ="
-              placeholder="e.g. 2"
-              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-              value={x0Text}
-              onChangeText={(t) => setX0Text(t)}
-            />
-          )}
-
-          {method === 'secant' && (
-            <View style={styles.row}>
-              <View style={styles.halfCol}>
-                <TechInput
-                  label="First Guess (x₀)"
-                  prefix="x₀ ="
-                  placeholder="e.g. 1"
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  value={x0Text}
-                  onChangeText={(t) => setX0Text(t)}
-                />
-              </View>
-              <View style={styles.halfCol}>
-                <TechInput
-                  label="Second Guess (x₁)"
-                  prefix="x₁ ="
-                  placeholder="e.g. 2"
-                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                  value={x1Text}
-                  onChangeText={(t) => setX1Text(t)}
-                />
-              </View>
-            </View>
-          )}
-
-          {method === 'fixed-point' && (
-            <>
-              <TechInput
-                label="Rearranged: x = g(x)"
-                prefix="g(x) ="
-                placeholder="e.g. (2*x + 5)^(1/3)"
-                value={gFunctionStr}
-                onFocus={() => setActiveField('g')}
-                onSelectionChange={(e) => {
-                  gSelection.current = e.nativeEvent.selection;
-                }}
-                onChangeText={(t) => setGFunctionStr(t)}
-                onClear={() => {
-                  setGFunctionStr('');
-                  gSelection.current = { start: 0, end: 0 };
-                }}
-              />
-              <TechInput
-                label="Initial Guess (x₀)"
-                prefix="x₀ ="
-                placeholder="e.g. 2"
-                keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                value={x0Text}
-                onChangeText={(t) => setX0Text(t)}
-              />
-            </>
-          )}
-
-          {/* Advanced toggle */}
-          <TouchableOpacity
-            style={styles.advancedToggle}
-            onPress={() => setShowAdvanced(!showAdvanced)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.advancedToggleText, { color: cfg.accentColor }]}>
-              {showAdvanced ? '▾ Hide Advanced' : '▸ Advanced Parameters (Tolerance & Steps)'}
-            </Text>
-          </TouchableOpacity>
-
-          {showAdvanced && (
-            <View style={[styles.advancedBox, { backgroundColor: colors.surfaceSecondary }]}>
-              <View style={styles.row}>
-                <View style={styles.halfCol}>
-                  <TechInput
-                    label="Accuracy Goal"
-                    prefix="ε ="
-                    placeholder="1e-6"
-                    keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'}
-                    value={tolText}
-                    onChangeText={(t) => setTolText(t)}
-                  />
-                </View>
-                <View style={styles.halfCol}>
-                  <TechInput
-                    label="Max Steps"
-                    prefix="N ="
-                    placeholder="50"
-                    keyboardType="number-pad"
-                    value={maxIterText}
-                    onChangeText={(t) => setMaxIterText(t)}
-                  />
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* Calculate Button */}
-          <TechButton
-            label={isSolving ? 'Calculating...' : `Find Root with ${cfg.title.split(' ')[0]}`}
-            variant="primary"
-            onPress={handleSolve}
-            disabled={isSolving || !functionStr.trim()}
-            style={[styles.calcBtn, { backgroundColor: cfg.accentColor }]}
-          />
-        </View>
-
-        {/* Interactive Visual Graph */}
+        {/* Interactive Visual Graph at Top */}
         <FunctionPlotter
           functionStr={functionStr}
           root={result?.root}
@@ -593,17 +452,257 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
           b={parseFloat(bText)}
         />
 
-        {/* Results Overview */}
-        {result && <RootResults result={result} />}
-
-        {/* Natural Step-by-Step Explanation Cards */}
-        {result && result.iterations.length > 0 && (
-          <StepExplanationCards method={result.method} iterations={result.iterations} />
+        {/* Loading Indicator Overlay */}
+        {isSolving && (
+          <View style={[styles.solvingOverlay, { backgroundColor: colors.surface, borderColor: cfg.accentColor }]}>
+            <ActivityIndicator size="small" color={cfg.accentColor} />
+            <Text style={[styles.solvingText, { color: colors.textPrimary }]}>
+              Evaluating numerical iterations...
+            </Text>
+          </View>
         )}
 
-        {/* Iteration Table */}
-        {result && result.iterations.length > 0 && (
-          <IterationTable method={result.method} iterations={result.iterations} />
+        {/* TAB 1: Inputs & Parameters */}
+        {activeDeckTab === 'inputs' && (
+          <>
+            {/* Explanation Card */}
+            <View
+              style={[
+                styles.infoCard,
+                {
+                  backgroundColor: isDark ? cfg.accentColor + '18' : cfg.accentColor + '12',
+                  borderLeftColor: cfg.accentColor,
+                },
+              ]}
+            >
+              <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
+                {cfg.description}
+              </Text>
+            </View>
+
+            {/* Input Form Card */}
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {/* Quick Presets */}
+              <View style={[styles.presetsSection, { borderBottomColor: colors.borderLight }]}>
+                <Text style={[styles.presetHeading, { color: colors.textSecondary }]}>Presets:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {cfg.presets.map((preset, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      activeOpacity={0.75}
+                      onPress={() => applyPreset(preset)}
+                      style={[styles.presetChip, { backgroundColor: cfg.accentColor + '20' }]}
+                      accessibilityLabel={`Apply preset ${preset.name}`}
+                      accessibilityRole="button"
+                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                    >
+                      <Text style={[styles.presetText, { color: cfg.accentColor }]}>{preset.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Equation Input */}
+              <TechInput
+                label="Target Equation f(x) = 0"
+                prefix="f(x) ="
+                placeholder="e.g. x^3 - 2*x - 5"
+                value={functionStr}
+                onFocus={() => setActiveField('fn')}
+                onSelectionChange={(e) => {
+                  fnSelection.current = e.nativeEvent.selection;
+                }}
+                onChangeText={(text) => {
+                  setFunctionStr(text);
+                }}
+                onClear={() => {
+                  setFunctionStr('');
+                  fnSelection.current = { start: 0, end: 0 };
+                }}
+              />
+
+              {/* Quick Keypad */}
+              <MathKeypad
+                onInsert={insertSymbol}
+                onBackspace={backspaceSymbol}
+                onClear={clearActiveSymbol}
+              />
+
+              {/* Specific Inputs based on method */}
+              {method === 'bisection' && (
+                <View style={styles.row}>
+                  <View style={styles.halfCol}>
+                    <TechInput
+                      label="Start Interval (a)"
+                      prefix="a ="
+                      placeholder="e.g. 1"
+                      keyboardType="default"
+                      value={aText}
+                      onChangeText={(t) => setAText(t)}
+                    />
+                  </View>
+                  <View style={styles.halfCol}>
+                    <TechInput
+                      label="End Interval (b)"
+                      prefix="b ="
+                      placeholder="e.g. 2"
+                      keyboardType="default"
+                      value={bText}
+                      onChangeText={(t) => setBText(t)}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {method === 'newton' && (
+                <TechInput
+                  label="Starting Guess (x₀)"
+                  prefix="x₀ ="
+                  placeholder="e.g. 2"
+                  keyboardType="default"
+                  value={x0Text}
+                  onChangeText={(t) => setX0Text(t)}
+                />
+              )}
+
+              {method === 'secant' && (
+                <View style={styles.row}>
+                  <View style={styles.halfCol}>
+                    <TechInput
+                      label="First Guess (x₀)"
+                      prefix="x₀ ="
+                      placeholder="e.g. 1"
+                      keyboardType="default"
+                      value={x0Text}
+                      onChangeText={(t) => setX0Text(t)}
+                    />
+                  </View>
+                  <View style={styles.halfCol}>
+                    <TechInput
+                      label="Second Guess (x₁)"
+                      prefix="x₁ ="
+                      placeholder="e.g. 2"
+                      keyboardType="default"
+                      value={x1Text}
+                      onChangeText={(t) => setX1Text(t)}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {method === 'fixed-point' && (
+                <>
+                  <TechInput
+                    label="Rearranged: x = g(x)"
+                    prefix="g(x) ="
+                    placeholder="e.g. (2*x + 5)^(1/3)"
+                    value={gFunctionStr}
+                    onFocus={() => setActiveField('g')}
+                    onSelectionChange={(e) => {
+                      gSelection.current = e.nativeEvent.selection;
+                    }}
+                    onChangeText={(t) => setGFunctionStr(t)}
+                    onClear={() => {
+                      setGFunctionStr('');
+                      gSelection.current = { start: 0, end: 0 };
+                    }}
+                  />
+                  <TechInput
+                    label="Initial Guess (x₀)"
+                    prefix="x₀ ="
+                    placeholder="e.g. 2"
+                    keyboardType="default"
+                    value={x0Text}
+                    onChangeText={(t) => setX0Text(t)}
+                  />
+                </>
+              )}
+
+              {/* Advanced toggle */}
+              <TouchableOpacity
+                style={styles.advancedToggle}
+                onPress={() => setShowAdvanced(!showAdvanced)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.advancedToggleText, { color: cfg.accentColor }]}>
+                  {showAdvanced ? '▾ Hide Advanced' : '▸ Advanced Parameters (Tolerance & Steps)'}
+                </Text>
+              </TouchableOpacity>
+
+              {showAdvanced && (
+                <View style={[styles.advancedBox, { backgroundColor: colors.surfaceSecondary }]}>
+                  <View style={styles.row}>
+                    <View style={styles.halfCol}>
+                      <TechInput
+                        label="Accuracy Goal"
+                        prefix="ε ="
+                        placeholder="1e-6"
+                        keyboardType="default"
+                        value={tolText}
+                        onChangeText={(t) => setTolText(t)}
+                      />
+                    </View>
+                    <View style={styles.halfCol}>
+                      <TechInput
+                        label="Max Steps"
+                        prefix="N ="
+                        placeholder="50"
+                        keyboardType="default"
+                        value={maxIterText}
+                        onChangeText={(t) => setMaxIterText(t)}
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Calculate Button */}
+              <TechButton
+                label={isSolving ? 'Calculating...' : `Find Root with ${cfg.title.split(' ')[0]}`}
+                variant="primary"
+                onPress={handleSolve}
+                disabled={isSolving || !functionStr.trim()}
+                style={[styles.calcBtn, { backgroundColor: cfg.accentColor }]}
+              />
+            </View>
+          </>
+        )}
+
+        {/* TAB 2: Solution & Natural Steps */}
+        {activeDeckTab === 'steps' && (
+          <>
+            {result ? (
+              <>
+                <RootResults result={result} />
+                {result.iterations.length > 0 && (
+                  <StepExplanationCards method={result.method} iterations={result.iterations} />
+                )}
+              </>
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Solution Yet</Text>
+                <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                  Tap "Find Root" on the Inputs tab to calculate the solution and view step-by-step explanations.
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* TAB 3: Iteration Data Table */}
+        {activeDeckTab === 'table' && (
+          <>
+            {result && result.iterations.length > 0 ? (
+              <IterationTable method={result.method} iterations={result.iterations} />
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Table Data</Text>
+                <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                  Execute a calculation to view the full convergence iteration table.
+                </Text>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -766,6 +865,63 @@ const styles = StyleSheet.create({
   },
   textWhite: {
     color: '#FFFFFF',
+  },
+  deckBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    gap: 8,
+  },
+  deckTab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  deckTabActive: {
+    borderWidth: 1,
+  },
+  deckTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  deckTabTextActive: {
+    fontWeight: '800',
+  },
+  solvingOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 14,
+    gap: 10,
+  },
+  solvingText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyCard: {
+    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptySub: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 
