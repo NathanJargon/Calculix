@@ -353,23 +353,25 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
           <Text style={[styles.topBarSubtitle, { color: cfg.accentColor }]}>{cfg.subtitle}</Text>
         </View>
 
-        {onOpenTextbook && (
+        <View style={styles.topBarActions}>
+          {onOpenTextbook && (
+            <TouchableOpacity
+              style={[styles.textbookPillBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={onOpenTextbook}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.textbookPillText, { color: cfg.accentColor }]}>Learn</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={[styles.guideBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={onOpenTextbook}
+            onPress={onOpenGuide}
             activeOpacity={0.7}
           >
-            <Text style={[styles.guideBtnText, { color: cfg.accentColor }]}>📚</Text>
+            <Text style={[styles.guideBtnText, { color: cfg.accentColor }]}>?</Text>
           </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={[styles.guideBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={onOpenGuide}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.guideBtnText, { color: cfg.accentColor }]}>?</Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Horizontal Method Switcher Strip */}
@@ -776,16 +778,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  textbookPillBtn: {
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textbookPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
   guideBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   guideBtnText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
   },
   scroll: {

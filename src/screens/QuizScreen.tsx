@@ -195,7 +195,7 @@ export const QuizScreen: React.FC<FlashcardsScreenProps> = ({ onBack }) => {
             activeOpacity={0.7}
             accessibilityLabel="Shuffle cards"
           >
-            <Text style={[styles.actionIconText, { color: colors.textPrimary }]}>🔀</Text>
+            <Text style={[styles.actionIconText, { color: colors.textPrimary }]}>Shuffle</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -411,7 +411,7 @@ export const QuizScreen: React.FC<FlashcardsScreenProps> = ({ onBack }) => {
                 >
                   <View style={styles.flipTopRow}>
                     <Text style={styles.flipBadge}>
-                      {isFlipped ? '💡 ANSWER & THEOREM' : '❓ QUESTION (TAP TO FLIP)'}
+                      {isFlipped ? 'ANSWER & THEOREM' : 'QUESTION  ·  TAP TO FLIP'}
                     </Text>
                     {currentQ.isCustom && (
                       <TouchableOpacity onPress={handleDeleteCurrent}>
@@ -630,15 +630,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionIconText: {
-    fontSize: 15,
+    fontSize: 12,
+    fontWeight: '700',
   },
   createBtn: {
     paddingHorizontal: 14,

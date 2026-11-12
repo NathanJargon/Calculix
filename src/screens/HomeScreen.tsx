@@ -45,7 +45,7 @@ export const METHOD_THEMES: MethodThemeItem[] = [
     title: 'Newton',
     subtitle: 'Tangent slope',
     badge: 'Super Fast',
-    symbol: "f'(x) ⚡",
+    symbol: "x − f/f'",
     bgColor: '#FFF0F7',
     darkBgColor: '#2D1122',
     accentColor: '#FF2E93',

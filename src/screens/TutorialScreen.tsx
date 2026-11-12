@@ -130,12 +130,14 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
           </View>
         </View>
 
-        {/* Section 1: The Big Idea (Intuition) */}
+        {/* Section 1: Core Intuition */}
         <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionIcon, { color: activeChapter.accentColor }]}>💡</Text>
+            <View style={[styles.sectionIndexPill, { backgroundColor: activeChapter.accentColor + '18' }]}>
+              <Text style={[styles.sectionIndexText, { color: activeChapter.accentColor }]}>01</Text>
+            </View>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              The Intuition ("The Big Idea")
+              Core Intuition
             </Text>
           </View>
           <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
@@ -146,7 +148,9 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
         {/* Section 2: Mathematical Formulation */}
         <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionIcon, { color: activeChapter.accentColor }]}>📐</Text>
+            <View style={[styles.sectionIndexPill, { backgroundColor: activeChapter.accentColor + '18' }]}>
+              <Text style={[styles.sectionIndexText, { color: activeChapter.accentColor }]}>02</Text>
+            </View>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               Mathematical Formulation
             </Text>
@@ -171,8 +175,17 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
 
         {/* Section 3: Conditions & Pitfalls */}
         <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={[styles.sectionIndexPill, { backgroundColor: activeChapter.accentColor + '18' }]}>
+              <Text style={[styles.sectionIndexText, { color: activeChapter.accentColor }]}>03</Text>
+            </View>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              Hypotheses & Limitations
+            </Text>
+          </View>
+
           <Text style={[styles.subSectionTitle, { color: colors.textPrimary }]}>
-            ✓ Required Conditions (Hypotheses)
+            Required Conditions
           </Text>
           {activeChapter.conditions.map((cond, idx) => (
             <View key={idx} style={styles.bulletRow}>
@@ -182,7 +195,7 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
           ))}
 
           <Text style={[styles.subSectionTitle, styles.mt16, { color: colors.textPrimary }]}>
-            ⚠️ Pitfalls & Limitations
+            Pitfalls & Edge Cases
           </Text>
           {activeChapter.pitfalls.map((pitfall, idx) => (
             <View key={idx} style={styles.bulletRow}>
@@ -195,7 +208,9 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
         {/* Section 4: Worked Step-by-Step Textbook Example */}
         <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionIcon, { color: activeChapter.accentColor }]}>📝</Text>
+            <View style={[styles.sectionIndexPill, { backgroundColor: activeChapter.accentColor + '18' }]}>
+              <Text style={[styles.sectionIndexText, { color: activeChapter.accentColor }]}>04</Text>
+            </View>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               Worked Textbook Example
             </Text>
@@ -244,9 +259,11 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
         {/* Section 5: How to Apply on Calculix */}
         <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionIcon, { color: activeChapter.accentColor }]}>📱</Text>
+            <View style={[styles.sectionIndexPill, { backgroundColor: activeChapter.accentColor + '18' }]}>
+              <Text style={[styles.sectionIndexText, { color: activeChapter.accentColor }]}>05</Text>
+            </View>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              How to Apply in Calculix
+              Calculator Application
             </Text>
           </View>
 
@@ -289,7 +306,7 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
               activeOpacity={0.8}
             >
               <Text style={styles.openCalculatorBtnText}>
-                Try {activeChapter.title.split(' ')[0]} Example in Calculator 🚀
+                Load Worked Example in Solver →
               </Text>
             </TouchableOpacity>
           )}
@@ -432,10 +449,18 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  sectionIcon: {
-    fontSize: 18,
+  sectionIndexPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  sectionIndexText: {
+    fontFamily: 'monospace',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   sectionTitle: {
     fontSize: 16,

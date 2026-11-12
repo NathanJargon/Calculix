@@ -148,7 +148,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.secondaryLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.secondary }]}>📖</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.secondary }]}>∑</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -169,7 +169,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.primary }]}>⏱</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.primary }]}>↺</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -190,7 +190,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, styles.drawerQuizIconBox]}>
-                  <Text style={[styles.drawerItemIcon, styles.drawerQuizIcon]}>🗂</Text>
+                  <Text style={[styles.drawerItemIcon, styles.drawerQuizIcon]}>▣</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -211,7 +211,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, { backgroundColor: colors.accentLight }]}>
-                  <Text style={[styles.drawerItemIcon, { color: colors.accent }]}>⚙</Text>
+                  <Text style={[styles.drawerItemIcon, { color: colors.accent }]}>≡</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
@@ -232,7 +232,7 @@ const LeftDrawerModal: React.FC<{
                 activeOpacity={0.7}
               >
                 <View style={[styles.drawerItemIconBox, styles.drawerLearnIconBox]}>
-                  <Text style={[styles.drawerItemIcon, styles.drawerLearnIcon]}>📚</Text>
+                  <Text style={[styles.drawerItemIcon, styles.drawerLearnIcon]}>§</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
