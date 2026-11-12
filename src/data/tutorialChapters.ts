@@ -1,4 +1,5 @@
 import { SolverId } from '../screens/HomeScreen';
+import { SolverPrefill } from '../services/historyService';
 
 export interface WorkedStep {
   step: string;
@@ -35,6 +36,7 @@ export interface TutorialChapter {
     inputItems: InputGuideItem[];
     usageSteps: string[];
     targetMethod: SolverId;
+    prefill?: SolverPrefill;
   };
 }
 
@@ -89,6 +91,14 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     },
     calculatorGuide: {
       targetMethod: 'bisection',
+      prefill: {
+        rootParams: {
+          functionStr: 'x^3 - x - 2',
+          a: 1,
+          b: 2,
+          tolerance: 1e-5,
+        },
+      },
       inputItems: [
         { field: 'Function f(x)', example: 'x^3 - x - 2', note: 'Standard math expression with x variable' },
         { field: 'Start (a)', example: '1', note: 'Lower bound where f(a) has one sign' },
@@ -155,6 +165,13 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     },
     calculatorGuide: {
       targetMethod: 'newton',
+      prefill: {
+        rootParams: {
+          functionStr: 'x^2 - 2',
+          x0: 2,
+          tolerance: 1e-7,
+        },
+      },
       inputItems: [
         { field: 'Function f(x)', example: 'x^2 - 2', note: 'Calculix automatically computes analytical derivatives' },
         { field: 'Initial Guess (x₀)', example: '2', note: 'Start reasonably close to the expected root' },
@@ -213,6 +230,13 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     },
     calculatorGuide: {
       targetMethod: 'secant',
+      prefill: {
+        rootParams: {
+          functionStr: 'x^2 - 4',
+          x0: 3,
+          x1: 2.5,
+        },
+      },
       inputItems: [
         { field: 'Function f(x)', example: 'x^2 - 4', note: 'Arbitrary continuous mathematical function' },
         { field: 'Point 1 (x₀)', example: '3', note: 'First initial estimate' },
@@ -276,6 +300,13 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     },
     calculatorGuide: {
       targetMethod: 'fixed-point',
+      prefill: {
+        rootParams: {
+          functionStr: 'x^2 - x - 2',
+          gFunctionStr: 'sqrt(x + 2)',
+          x0: 1,
+        },
+      },
       inputItems: [
         { field: 'Original f(x)', example: 'x^2 - x - 2', note: 'Original root statement' },
         { field: 'Iteration Form g(x)', example: 'sqrt(x + 2)', note: 'Must satisfy |g\'(x)| < 1 near root' },
@@ -338,6 +369,16 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     },
     calculatorGuide: {
       targetMethod: 'newton-divided',
+      prefill: {
+        interpolationParams: {
+          points: [
+            { id: 'tut-nd-1', x: 1, y: 1 },
+            { id: 'tut-nd-2', x: 2, y: 4 },
+            { id: 'tut-nd-3', x: 4, y: 16 },
+          ],
+          targetX: 3,
+        },
+      },
       inputItems: [
         { field: 'Data Points', example: '(1,1), (2,4), (4,16)', note: 'Add coordinates using the point editor' },
         { field: 'Estimate Target (x*)', example: '3', note: 'Value at which to evaluate the interpolated curve' },
@@ -394,6 +435,15 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     },
     calculatorGuide: {
       targetMethod: 'lagrange',
+      prefill: {
+        interpolationParams: {
+          points: [
+            { id: 'tut-lag-1', x: 1, y: 2 },
+            { id: 'tut-lag-2', x: 3, y: 8 },
+          ],
+          targetX: 2,
+        },
+      },
       inputItems: [
         { field: 'Point Table', example: '(1, 2), (3, 8)', note: 'Coordinate pairs' },
         { field: 'Estimation Target (x*)', example: '2', note: 'Query coordinate' },

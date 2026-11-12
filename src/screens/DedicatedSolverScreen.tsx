@@ -18,7 +18,7 @@ import { IterationTable } from '../components/rootFinding/IterationTable';
 import { RootResults } from '../components/rootFinding/RootResults';
 import { solveRoot } from '../math/rootFinding';
 import { onCalculationCompleted } from '../services/adService';
-import { saveCalculationToHistory } from '../services/historyService';
+import { saveCalculationToHistory, SolverPrefill } from '../services/historyService';
 import { formatFloat } from '../math/evaluator';
 import { useTheme } from '../theme/ThemeContext';
 import {
@@ -123,50 +123,66 @@ interface DedicatedSolverScreenProps {
   method: RootMethodType;
   onBack: () => void;
   onOpenGuide: () => void;
+  onOpenTextbook?: () => void;
   onChangeMethod?: (method: SolverId) => void;
+  initialPrefill?: SolverPrefill;
 }
 
 export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
   method,
   onBack,
   onOpenGuide,
+  onOpenTextbook,
   onChangeMethod,
+  initialPrefill,
 }) => {
   const { colors, isDark } = useTheme();
   const cfg = METHOD_CONFIG[method];
+  const rp = initialPrefill?.rootParams;
 
-  const [functionStr, setFunctionStr] = useState(cfg.defaultFn);
-  const [aText, setAText] = useState(cfg.defaultA !== undefined ? String(cfg.defaultA) : '');
-  const [bText, setBText] = useState(cfg.defaultB !== undefined ? String(cfg.defaultB) : '');
-  const [x0Text, setX0Text] = useState(cfg.defaultX0 !== undefined ? String(cfg.defaultX0) : '');
-  const [x1Text, setX1Text] = useState(cfg.defaultX1 !== undefined ? String(cfg.defaultX1) : '');
-  const [gFunctionStr, setGFunctionStr] = useState(cfg.defaultG || '');
-  const [tolText, setTolText] = useState('1e-6');
-  const [maxIterText, setMaxIterText] = useState('50');
+  const initFn = rp?.functionStr ?? cfg.defaultFn;
+  const initA = rp?.a !== undefined ? rp.a : cfg.defaultA;
+  const initB = rp?.b !== undefined ? rp.b : cfg.defaultB;
+  const initX0 = rp?.x0 !== undefined ? rp.x0 : cfg.defaultX0;
+  const initX1 = rp?.x1 !== undefined ? rp.x1 : cfg.defaultX1;
+  const initG = rp?.gFunctionStr ?? (cfg.defaultG || '');
+  const initTol = rp?.tolerance !== undefined ? rp.tolerance : 1e-6;
+  const initMaxIter = rp?.maxIterations !== undefined ? rp.maxIterations : 50;
+
+  const [functionStr, setFunctionStr] = useState(initFn);
+  const [aText, setAText] = useState(initA !== undefined ? String(initA) : '');
+  const [bText, setBText] = useState(initB !== undefined ? String(initB) : '');
+  const [x0Text, setX0Text] = useState(initX0 !== undefined ? String(initX0) : '');
+  const [x1Text, setX1Text] = useState(initX1 !== undefined ? String(initX1) : '');
+  const [gFunctionStr, setGFunctionStr] = useState(initG);
+  const [tolText, setTolText] = useState(String(initTol));
+  const [maxIterText, setMaxIterText] = useState(String(initMaxIter));
   const [activeField, setActiveField] = useState<'fn' | 'g'>('fn');
   const fnSelection = useRef<{ start: number; end: number }>({
-    start: cfg.defaultFn.length,
-    end: cfg.defaultFn.length,
+    start: initFn.length,
+    end: initFn.length,
   });
   const gSelection = useRef<{ start: number; end: number }>({
-    start: (cfg.defaultG || '').length,
-    end: (cfg.defaultG || '').length,
+    start: initG.length,
+    end: initG.length,
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [activeDeckTab, setActiveDeckTab] = useState<'inputs' | 'steps' | 'table'>('inputs');
+  const [activeDeckTab, setActiveDeckTab] = useState<'inputs' | 'steps' | 'table'>(
+    rp ? 'steps' : 'inputs'
+  );
   const [isSolving, setIsSolving] = useState(false);
   const [result, setResult] = useState<RootFindingResult | null>(() =>
     solveRoot({
       method,
-      functionStr: cfg.defaultFn,
-      a: cfg.defaultA,
-      b: cfg.defaultB,
-      x0: cfg.defaultX0,
-      x1: cfg.defaultX1,
-      gFunctionStr: cfg.defaultG,
-      tolerance: 1e-6,
-      maxIterations: 50,
+      functionStr: initFn,
+      a: initA,
+      b: initB,
+      x0: initX0,
+      x1: initX1,
+      gFunctionStr: initG || undefined,
+      tolerance: initTol,
+      maxIterations: initMaxIter,
     })
   );
 
@@ -336,6 +352,16 @@ export const DedicatedSolverScreen: React.FC<DedicatedSolverScreenProps> = ({
           <Text style={[styles.topBarTitle, { color: colors.textPrimary }]}>{cfg.title}</Text>
           <Text style={[styles.topBarSubtitle, { color: cfg.accentColor }]}>{cfg.subtitle}</Text>
         </View>
+
+        {onOpenTextbook && (
+          <TouchableOpacity
+            style={[styles.guideBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={onOpenTextbook}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.guideBtnText, { color: cfg.accentColor }]}>📚</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[styles.guideBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}

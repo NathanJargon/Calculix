@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -8,11 +8,12 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { SolverId } from './HomeScreen';
+import { SolverPrefill } from '../services/historyService';
 import { TUTORIAL_CHAPTERS, TutorialChapter } from '../data/tutorialChapters';
 
 interface TutorialScreenProps {
   onClose?: () => void;
-  onOpenSolver?: (methodId: SolverId) => void;
+  onOpenSolver?: (methodId: SolverId, prefill?: SolverPrefill) => void;
   initialChapterId?: string;
 }
 
@@ -26,6 +27,12 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
   const [activeChapterId, setActiveChapterId] = useState<string>(
     initialChapterId || TUTORIAL_CHAPTERS[0].id
   );
+
+  useEffect(() => {
+    if (initialChapterId) {
+      setActiveChapterId(initialChapterId);
+    }
+  }, [initialChapterId]);
 
   const activeChapter: TutorialChapter =
     TUTORIAL_CHAPTERS.find((c) => c.id === activeChapterId) || TUTORIAL_CHAPTERS[0];
@@ -278,11 +285,11 @@ export const TutorialScreen: React.FC<TutorialScreenProps> = ({
           {onOpenSolver && activeChapter.solverId && (
             <TouchableOpacity
               style={[styles.openCalculatorBtn, { backgroundColor: activeChapter.accentColor }]}
-              onPress={() => onOpenSolver(activeChapter.solverId!)}
+              onPress={() => onOpenSolver(activeChapter.solverId!, activeChapter.calculatorGuide.prefill)}
               activeOpacity={0.8}
             >
               <Text style={styles.openCalculatorBtnText}>
-                Open {activeChapter.title.split(' ')[0]} in Calculator 🚀
+                Try {activeChapter.title.split(' ')[0]} Example in Calculator 🚀
               </Text>
             </TouchableOpacity>
           )}

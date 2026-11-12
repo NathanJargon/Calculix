@@ -20,7 +20,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { QuizScreen } from '../screens/QuizScreen';
 import { TheoryGuideModal } from '../screens/TheoryGuideModal';
 import { HistoryModal } from '../screens/HistoryModal';
-import { HistoryItem } from '../services/historyService';
+import { HistoryItem, SolverPrefill } from '../services/historyService';
 import { IntroScreen } from '../screens/intro/IntroScreen';
 import { LoadingSplash } from '../components/common/LoadingSplash';
 import { useTheme } from '../theme/ThemeContext';
@@ -282,6 +282,23 @@ export const RootNavigator: React.FC = () => {
   const [guideOpen, setGuideOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [activeSolver, setActiveSolver] = useState<SolverId | null>('bisection');
+  const [solverPrefill, setSolverPrefill] = useState<SolverPrefill | undefined>(undefined);
+  const [solverInstanceKey, setSolverInstanceKey] = useState(0);
+  const [textbookModalChapter, setTextbookModalChapter] = useState<SolverId | null>(null);
+
+  const openSolverWithPrefill = (method: SolverId, prefill?: SolverPrefill) => {
+    setSolverPrefill(prefill);
+    setSolverInstanceKey((k) => k + 1);
+    setActiveSolver(method);
+  };
+
+  const handleSelectHistoryItem = (item: HistoryItem) => {
+    setHistoryOpen(false);
+    openSolverWithPrefill(item.method, {
+      rootParams: item.rootParams,
+      interpolationParams: item.interpolationParams,
+    });
+  };
 
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -316,6 +333,10 @@ export const RootNavigator: React.FC = () => {
         setHistoryOpen(false);
         return true;
       }
+      if (textbookModalChapter !== null) {
+        setTextbookModalChapter(null);
+        return true;
+      }
       if (activeSolver !== null) {
         setActiveSolver(null);
         return true;
@@ -334,7 +355,7 @@ export const RootNavigator: React.FC = () => {
 
     const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSub.remove();
-  }, [activeSolver, menuOpen, guideOpen, historyOpen]);
+  }, [activeSolver, menuOpen, guideOpen, historyOpen, textbookModalChapter]);
 
   const handleFinishIntro = async () => {
     try {
@@ -366,30 +387,49 @@ export const RootNavigator: React.FC = () => {
       <View style={[styles.appWrapper, { backgroundColor: colors.background }]}>
         {isRootFinding ? (
           <DedicatedSolverScreen
-            key={activeSolver}
+            key={`${activeSolver}-${solverInstanceKey}`}
             method={activeSolver as RootMethodType}
+            initialPrefill={solverPrefill}
             onBack={() => setActiveSolver(null)}
-            onChangeMethod={(newMethod) => setActiveSolver(newMethod)}
+            onChangeMethod={(newMethod) => openSolverWithPrefill(newMethod, undefined)}
             onOpenGuide={() => setGuideOpen(true)}
+            onOpenTextbook={() => setTextbookModalChapter(activeSolver)}
           />
         ) : (
           <DedicatedInterpolationScreen
-            key={activeSolver}
+            key={`${activeSolver}-${solverInstanceKey}`}
             method={activeSolver as InterpolationMethodType}
+            initialPrefill={solverPrefill}
             onBack={() => setActiveSolver(null)}
-            onChangeMethod={(newMethod) => setActiveSolver(newMethod)}
+            onChangeMethod={(newMethod) => openSolverWithPrefill(newMethod, undefined)}
             onOpenGuide={() => setGuideOpen(true)}
+            onOpenTextbook={() => setTextbookModalChapter(activeSolver)}
           />
         )}
 
         <TheoryGuideModal visible={guideOpen} onClose={() => setGuideOpen(false)} />
 
+        <Modal
+          visible={textbookModalChapter !== null}
+          animationType="slide"
+          onRequestClose={() => setTextbookModalChapter(null)}
+        >
+          <SafeAreaView style={[styles.appWrapper, { backgroundColor: colors.background }]}>
+            <TutorialScreen
+              initialChapterId={textbookModalChapter || activeSolver}
+              onClose={() => setTextbookModalChapter(null)}
+              onOpenSolver={(methodId, prefill) => {
+                setTextbookModalChapter(null);
+                openSolverWithPrefill(methodId, prefill);
+              }}
+            />
+          </SafeAreaView>
+        </Modal>
+
         <HistoryModal
           visible={historyOpen}
           onClose={() => setHistoryOpen(false)}
-          onSelectItem={(_item: HistoryItem) => {
-            setHistoryOpen(false);
-          }}
+          onSelectItem={handleSelectHistoryItem}
         />
       </View>
     );
@@ -442,7 +482,7 @@ export const RootNavigator: React.FC = () => {
           >
             {() => (
               <HomeScreen
-                onSelectMethod={(id: SolverId) => setActiveSolver(id)}
+                onSelectMethod={(id: SolverId) => openSolverWithPrefill(id, undefined)}
                 onOpenMenu={() => setMenuOpen(true)}
                 onOpenGuide={() => setGuideOpen(true)}
               />
@@ -470,8 +510,8 @@ export const RootNavigator: React.FC = () => {
           >
             {() => (
               <TutorialScreen
-                onOpenSolver={(methodId) => {
-                  setActiveSolver(methodId);
+                onOpenSolver={(methodId, prefill) => {
+                  openSolverWithPrefill(methodId, prefill);
                 }}
               />
             )}
@@ -522,9 +562,7 @@ export const RootNavigator: React.FC = () => {
         <HistoryModal
           visible={historyOpen}
           onClose={() => setHistoryOpen(false)}
-          onSelectItem={(_item: HistoryItem) => {
-            setHistoryOpen(false);
-          }}
+          onSelectItem={handleSelectHistoryItem}
         />
       </View>
     </NavigationContainer>

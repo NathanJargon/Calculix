@@ -5,6 +5,27 @@ import { DataPoint } from '../types/interpolation';
 const STORAGE_KEY = '@calculix_calculation_history_v1';
 const MAX_HISTORY_ITEMS = 15;
 
+export interface RootSolverParams {
+  functionStr: string;
+  a?: number;
+  b?: number;
+  x0?: number;
+  x1?: number;
+  gFunctionStr?: string;
+  tolerance?: number;
+  maxIterations?: number;
+}
+
+export interface InterpolationSolverParams {
+  points: DataPoint[];
+  targetX: number;
+}
+
+export interface SolverPrefill {
+  rootParams?: RootSolverParams;
+  interpolationParams?: InterpolationSolverParams;
+}
+
 export interface HistoryItem {
   id: string;
   type: 'root' | 'interpolation';
@@ -13,20 +34,8 @@ export interface HistoryItem {
   expressionSummary: string;
   resultSummary: string;
   timestamp: number;
-  rootParams?: {
-    functionStr: string;
-    a?: number;
-    b?: number;
-    x0?: number;
-    x1?: number;
-    gFunctionStr?: string;
-    tolerance?: number;
-    maxIterations?: number;
-  };
-  interpolationParams?: {
-    points: DataPoint[];
-    targetX: number;
-  };
+  rootParams?: RootSolverParams;
+  interpolationParams?: InterpolationSolverParams;
 }
 
 export async function getCalculationHistory(): Promise<HistoryItem[]> {

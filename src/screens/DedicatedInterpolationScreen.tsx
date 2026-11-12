@@ -16,7 +16,7 @@ import { LagrangeBasisTable } from '../components/interpolation/LagrangeBasisTab
 import { PointListEditor } from '../components/interpolation/PointListEditor';
 import { solveInterpolation } from '../math/interpolation';
 import { onCalculationCompleted } from '../services/adService';
-import { saveCalculationToHistory } from '../services/historyService';
+import { saveCalculationToHistory, SolverPrefill } from '../services/historyService';
 import { formatFloat } from '../math/evaluator';
 import { useTheme } from '../theme/ThemeContext';
 import {
@@ -64,28 +64,37 @@ interface DedicatedInterpolationScreenProps {
   method: InterpolationMethodType;
   onBack: () => void;
   onOpenGuide: () => void;
+  onOpenTextbook?: () => void;
   onChangeMethod?: (method: SolverId) => void;
+  initialPrefill?: SolverPrefill;
 }
 
 export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreenProps> = ({
   method,
   onBack,
   onOpenGuide,
+  onOpenTextbook,
   onChangeMethod,
+  initialPrefill,
 }) => {
   const { colors, isDark } = useTheme();
   const cfg = INTERPOLATION_CONFIG[method];
+  const ip = initialPrefill?.interpolationParams;
+  const initPoints = ip?.points ?? DEFAULT_POINTS;
+  const initTargetX = ip?.targetX ?? 2.5;
 
-  const [points, setPoints] = useState<DataPoint[]>(DEFAULT_POINTS);
-  const [targetX, setTargetX] = useState<number>(2.5);
-  const [activeDeckTab, setActiveDeckTab] = useState<'points' | 'solution' | 'matrix'>('points');
+  const [points, setPoints] = useState<DataPoint[]>(initPoints);
+  const [targetX, setTargetX] = useState<number>(initTargetX);
+  const [activeDeckTab, setActiveDeckTab] = useState<'points' | 'solution' | 'matrix'>(
+    ip ? 'solution' : 'points'
+  );
   const [isSolving, setIsSolving] = useState(false);
 
   const [result, setResult] = useState<InterpolationResult | null>(() =>
     solveInterpolation({
       method,
-      points: DEFAULT_POINTS,
-      targetX: 2.5,
+      points: initPoints,
+      targetX: initTargetX,
     })
   );
 
@@ -137,6 +146,16 @@ export const DedicatedInterpolationScreen: React.FC<DedicatedInterpolationScreen
           <Text style={[styles.topBarTitle, { color: colors.textPrimary }]}>{cfg.title}</Text>
           <Text style={[styles.topBarSubtitle, { color: cfg.accentColor }]}>{cfg.subtitle}</Text>
         </View>
+
+        {onOpenTextbook && (
+          <TouchableOpacity
+            style={[styles.guideBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={onOpenTextbook}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.guideBtnText, { color: cfg.accentColor }]}>📚</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[styles.guideBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
