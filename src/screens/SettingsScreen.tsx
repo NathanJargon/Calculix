@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import packageJson from '../../package.json';
+import { clearCalculationHistory } from '../services/historyService';
 import { useTheme } from '../theme/ThemeContext';
 
 export const SettingsScreen: React.FC = () => {
@@ -78,6 +80,36 @@ export const SettingsScreen: React.FC = () => {
             <Text style={[styles.resetTourText, { color: colors.primary }]}>Reset</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={[styles.settingRow, styles.settingRowBorder, { borderTopColor: colors.borderLight }]}>
+          <View style={styles.settingTextGroup}>
+            <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+              Clear Calculation History
+            </Text>
+            <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>
+              Remove all saved root-finding and interpolation runs
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.resetTourBtn, { backgroundColor: colors.secondaryLight }]}
+            onPress={() => {
+              Alert.alert('Clear History', 'Remove all saved calculation history?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Clear',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await clearCalculationHistory();
+                    Alert.alert('History Cleared', 'All saved calculations have been removed.');
+                  },
+                },
+              ]);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.resetTourText, { color: colors.secondary }]}>Clear</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Methods Supported */}
@@ -119,7 +151,7 @@ export const SettingsScreen: React.FC = () => {
         </View>
         <View style={[styles.infoRow, styles.rowBorder, { borderBottomColor: colors.borderLight }]}>
           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Version</Text>
-          <Text style={[styles.infoValue, { color: colors.textPrimary }]}>1.0.3 (Release)</Text>
+          <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{packageJson.version} (Release)</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Math Core</Text>

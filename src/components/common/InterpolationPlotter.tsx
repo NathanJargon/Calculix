@@ -41,16 +41,52 @@ export const InterpolationPlotter: React.FC<InterpolationPlotterProps> = ({
 
     const minX = Math.min(...allX);
     const maxX = Math.max(...allX);
-    const minY = Math.min(...allY);
-    const maxY = Math.max(...allY);
+
+    // Evaluate exact Lagrange interpolating polynomial across 60 sample points
+    const sortedPoints = [...points].sort((a, b) => a.x - b.x);
+    const hasDuplicateX = sortedPoints.some(
+      (pt, i) => i > 0 && Math.abs(pt.x - sortedPoints[i - 1].x) < 1e-12
+    );
+
+    const evalPoly = (xVal: number): number => {
+      let sum = 0;
+      for (let i = 0; i < sortedPoints.length; i++) {
+        let basis = 1;
+        for (let j = 0; j < sortedPoints.length; j++) {
+          if (i !== j) {
+            basis *= (xVal - sortedPoints[j].x) / (sortedPoints[i].x - sortedPoints[j].x);
+          }
+        }
+        sum += sortedPoints[i].y * basis;
+      }
+      return sum;
+    };
+
+    const samplePts: { x: number; y: number }[] = [];
+    if (!hasDuplicateX) {
+      const steps = 60;
+      const stepSize = (maxX - minX) / steps || 1;
+      for (let s = 0; s <= steps; s++) {
+        const sxVal = minX + s * stepSize;
+        const syVal = evalPoly(sxVal);
+        if (Number.isFinite(syVal)) {
+          samplePts.push({ x: sxVal, y: syVal });
+        }
+      }
+    }
+
+    const curveNodes = samplePts.length >= 2 ? samplePts : sortedPoints;
+    const allCurveY = allY.concat(curveNodes.map((c) => c.y));
+    const cMinY = Math.min(...allCurveY);
+    const cMaxY = Math.max(...allCurveY);
 
     const padX = (maxX - minX) * 0.15 || 1;
-    const padY = (maxY - minY) * 0.15 || 1;
+    const padY = (cMaxY - cMinY) * 0.15 || 1;
 
     const plotMinX = minX - padX;
     const plotMaxX = maxX + padX;
-    const plotMinY = minY - padY;
-    const plotMaxY = maxY + padY;
+    const plotMinY = cMinY - padY;
+    const plotMaxY = cMaxY + padY;
 
     const transformX = (x: number) => {
       return ((x - plotMinX) / (plotMaxX - plotMinX)) * plotWidth;
@@ -60,16 +96,14 @@ export const InterpolationPlotter: React.FC<InterpolationPlotterProps> = ({
       return plotHeight - ((y - plotMinY) / (plotMaxY - plotMinY)) * plotHeight;
     };
 
-    // Connect points with a smooth curve or polyline
-    const sortedPoints = [...points].sort((a, b) => a.x - b.x);
     let d = '';
-    sortedPoints.forEach((pt, idx) => {
+    curveNodes.forEach((pt, idx) => {
       const sx = transformX(pt.x);
       const sy = transformY(pt.y);
       if (idx === 0) {
-        d += `M ${sx} ${sy}`;
+        d += `M ${sx.toFixed(1)} ${sy.toFixed(1)}`;
       } else {
-        d += ` L ${sx} ${sy}`;
+        d += ` L ${sx.toFixed(1)} ${sy.toFixed(1)}`;
       }
     });
 

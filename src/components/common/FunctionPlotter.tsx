@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import { compileFunction } from '../../math/evaluator';
@@ -32,7 +32,12 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
   }, [functionStr]);
 
   const compiledResult = useMemo(() => compileFunction(debouncedFn), [debouncedFn]);
-  const evalFn = compiledResult.compiled?.evaluate;
+  const lastValidEvalRef = useRef<((x: number) => number) | undefined>(undefined);
+  if (compiledResult.compiled?.evaluate) {
+    lastValidEvalRef.current = compiledResult.compiled.evaluate;
+  }
+  const evalFn = compiledResult.compiled?.evaluate ?? lastValidEvalRef.current;
+  const isEditingIncomplete = !compiledResult.compiled?.evaluate && Boolean(lastValidEvalRef.current);
 
   const { minX, maxX, pathD, hasZeroAxisY, axisY, hasZeroAxisX, axisX, toSvgX, toSvgY } = useMemo(() => {
     // Determine x-domain
@@ -51,7 +56,7 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
     // Sample points
     const steps = 60;
     const stepSize = (dMaxX - dMinX) / steps;
-    const rawPoints: { x: number; y: number }[] = [];
+    const rawPoints: { x: number; y: number | null }[] = [];
     let minY = Infinity;
     let maxY = -Infinity;
 
@@ -60,13 +65,20 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
         const x = dMinX + i * stepSize;
         try {
           const res = evalFn(x);
-          if (typeof res === 'number' && !Number.isNaN(res) && Number.isFinite(res)) {
+          if (
+            typeof res === 'number' &&
+            !Number.isNaN(res) &&
+            Number.isFinite(res) &&
+            Math.abs(res) <= 1e4
+          ) {
             rawPoints.push({ x, y: res });
             if (res < minY) minY = res;
             if (res > maxY) maxY = res;
+          } else {
+            rawPoints.push({ x, y: null });
           }
         } catch {
-          // Ignore point error
+          rawPoints.push({ x, y: null });
         }
       }
     }
@@ -78,7 +90,8 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
     }
 
     // Add 15% vertical padding
-    const yPadding = (maxY - minY) * 0.15 || 2;
+    const ySpan = maxY - minY;
+    const yPadding = ySpan * 0.15 || 2;
     const plotMinY = minY - yPadding;
     const plotMaxY = maxY + yPadding;
 
@@ -91,16 +104,27 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
       return plotHeight - ((y - plotMinY) / (plotMaxY - plotMinY)) * plotHeight;
     };
 
-    // Build SVG Path
+    // Build SVG Path with discontinuity detection
     let d = '';
-    rawPoints.forEach((pt, index) => {
+    let prevY: number | null = null;
+    rawPoints.forEach((pt) => {
+      if (pt.y === null) {
+        prevY = null;
+        return;
+      }
       const sx = transformX(pt.x);
       const sy = transformY(pt.y);
-      if (index === 0) {
-        d += `M ${sx} ${sy}`;
+      const isJumpDiscontinuity =
+        prevY !== null &&
+        prevY * pt.y < 0 &&
+        Math.abs(pt.y - prevY) > ySpan * 0.75;
+
+      if (prevY === null || isJumpDiscontinuity) {
+        d += `${d ? ' ' : ''}M ${sx.toFixed(1)} ${sy.toFixed(1)}`;
       } else {
-        d += ` L ${sx} ${sy}`;
+        d += ` L ${sx.toFixed(1)} ${sy.toFixed(1)}`;
       }
+      prevY = pt.y;
     });
 
     const aY = transformY(0);
@@ -135,7 +159,9 @@ export const FunctionPlotter: React.FC<FunctionPlotterProps> = ({
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.badgeText, { color: colors.primary }]}>f(x) Curve</Text>
+          <Text style={[styles.badgeText, { color: colors.primary }]}>
+            {isEditingIncomplete ? 'Editing f(x)...' : 'f(x) Curve'}
+          </Text>
         </View>
       </View>
 
