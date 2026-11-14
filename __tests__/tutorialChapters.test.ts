@@ -1,11 +1,11 @@
-import { TUTORIAL_CHAPTERS } from '../src/data/tutorialChapters';
+import { TUTORIAL_CHAPTERS, USER_MANUAL_SECTIONS } from '../src/data/tutorialChapters';
 import { solveRoot } from '../src/math/rootFinding';
 import { solveInterpolation } from '../src/math/interpolation';
 import { RootMethodType } from '../src/types/rootFinding';
 import { InterpolationMethodType } from '../src/types/interpolation';
 
-describe('TUTORIAL_CHAPTERS data & prefill solver verification', () => {
-  it('contains all 6 core numerical method chapters with complete educational sections', () => {
+describe('TUTORIAL_CHAPTERS & USER_MANUAL_SECTIONS verification', () => {
+  it('contains all 6 core numerical method chapters with multi-page beauty, derivation, and worked example sections', () => {
     expect(TUTORIAL_CHAPTERS.length).toBe(6);
     const ids = TUTORIAL_CHAPTERS.map((c) => c.id);
     expect(ids).toEqual([
@@ -19,6 +19,9 @@ describe('TUTORIAL_CHAPTERS data & prefill solver verification', () => {
 
     for (const ch of TUTORIAL_CHAPTERS) {
       expect(ch.title.length).toBeGreaterThan(0);
+      expect(ch.beautyNarrative.length).toBeGreaterThan(50);
+      expect(ch.realWorldApplications.length).toBeGreaterThan(0);
+      expect(ch.derivationSteps.length).toBeGreaterThan(0);
       expect(ch.intuition.length).toBeGreaterThan(20);
       expect(ch.mathFormula.length).toBeGreaterThan(0);
       expect(ch.conditions.length).toBeGreaterThan(0);
@@ -26,6 +29,16 @@ describe('TUTORIAL_CHAPTERS data & prefill solver verification', () => {
       expect(ch.workedExample.stepByStep.length).toBeGreaterThan(0);
       expect(ch.calculatorGuide.inputItems.length).toBeGreaterThan(0);
       expect(ch.calculatorGuide.prefill).toBeDefined();
+    }
+  });
+
+  it('contains all 5 comprehensive App User Manual sections', () => {
+    expect(USER_MANUAL_SECTIONS.length).toBe(5);
+    for (const sec of USER_MANUAL_SECTIONS) {
+      expect(sec.title.length).toBeGreaterThan(0);
+      expect(sec.index.length).toBeGreaterThan(0);
+      expect(sec.summary.length).toBeGreaterThan(0);
+      expect(sec.items.length).toBeGreaterThan(0);
     }
   });
 
@@ -71,4 +84,3 @@ describe('TUTORIAL_CHAPTERS data & prefill solver verification', () => {
     }
   });
 });
-

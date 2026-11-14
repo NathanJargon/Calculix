@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   Switch,
@@ -13,15 +14,26 @@ import packageJson from '../../package.json';
 import { clearCalculationHistory } from '../services/historyService';
 import { useTheme } from '../theme/ThemeContext';
 
+const PUBLISHER_URL = 'https://play.google.com/store/apps/developer?id=GL_DVLP';
+const CREATOR_URL = 'https://github.com/NathanJargon';
+
 export const SettingsScreen: React.FC = () => {
   const { colors, isDark, toggleTheme } = useTheme();
+
+  const openExternalLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Unable to Open Link', url);
+    }
+  };
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
     >
-      {/* Visual greeting or header banner like profile in mock */}
+      {/* Visual greeting or header banner */}
       <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={[styles.avatarBox, { backgroundColor: colors.primaryLight }]}>
           <Text style={[styles.avatarText, { color: colors.primary }]}>C</Text>
@@ -138,6 +150,46 @@ export const SettingsScreen: React.FC = () => {
             </View>
           </View>
         ))}
+      </View>
+
+      {/* Credits & Developers Section */}
+      <Text style={[styles.sectionHeading, { color: colors.textMuted }]}>
+        CREDITS & DEVELOPERS
+      </Text>
+      <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.creditRow, styles.rowBorder, { borderBottomColor: colors.borderLight }]}
+          onPress={() => openExternalLink(PUBLISHER_URL)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.creditInfoGroup}>
+            <Text style={[styles.creditRoleLabel, { color: colors.textMuted }]}>PUBLISHER</Text>
+            <Text style={[styles.creditName, { color: colors.textPrimary }]}>GL_DVLP</Text>
+            <Text style={[styles.creditUrlText, { color: colors.textSecondary }]}>
+              play.google.com/store/apps/developer?id=GL_DVLP
+            </Text>
+          </View>
+          <View style={[styles.creditLinkPill, { backgroundColor: colors.primaryLight }]}>
+            <Text style={[styles.creditLinkPillText, { color: colors.primary }]}>Google Play →</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.creditRow}
+          onPress={() => openExternalLink(CREATOR_URL)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.creditInfoGroup}>
+            <Text style={[styles.creditRoleLabel, { color: colors.textMuted }]}>CREATOR & LEAD DEVELOPER</Text>
+            <Text style={[styles.creditName, { color: colors.textPrimary }]}>MMotsu</Text>
+            <Text style={[styles.creditUrlText, { color: colors.textSecondary }]}>
+              github.com/NathanJargon
+            </Text>
+          </View>
+          <View style={[styles.creditLinkPill, { backgroundColor: colors.secondaryLight }]}>
+            <Text style={[styles.creditLinkPillText, { color: colors.secondary }]}>GitHub →</Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* About Info */}
@@ -280,6 +332,40 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  creditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  creditInfoGroup: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  creditRoleLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  creditName: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  creditUrlText: {
+    fontFamily: 'monospace',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  creditLinkPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  creditLinkPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -295,4 +381,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

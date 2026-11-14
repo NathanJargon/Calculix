@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   BackHandler,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -31,6 +32,9 @@ import { TutorialScreen } from '../screens/TutorialScreen';
 export const navigationRef = createNavigationContainerRef<any>();
 
 const Tab = createBottomTabNavigator();
+
+const PUBLISHER_URL = 'https://play.google.com/store/apps/developer?id=GL_DVLP';
+const CREATOR_URL = 'https://github.com/NathanJargon';
 
 // Minimal SVG-style geometric tab icons
 const TabIcon: React.FC<{
@@ -98,6 +102,89 @@ const LearnTabIcon = ({ focused, color }: { focused: boolean; color: string; siz
   <TabIcon type="learn" focused={focused} color={color} />
 );
 
+// Credits Modal for Creators & Developers
+const CreditsModal: React.FC<{
+  visible: boolean;
+  onClose: () => void;
+}> = ({ visible, onClose }) => {
+  const { colors } = useTheme();
+
+  const openUrl = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Unable to Open Link', url);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity
+        style={[styles.creditsOverlay, { backgroundColor: colors.overlay }]}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={[styles.creditsDialog, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <View style={styles.creditsHeaderRow}>
+            <View>
+              <Text style={[styles.creditsCategory, { color: colors.primary }]}>CALCULIX TEAM</Text>
+              <Text style={[styles.creditsTitle, { color: colors.textPrimary }]}>Credits & Developers</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.creditsCloseBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.creditsCloseText, { color: colors.textPrimary }]}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.creditsDesc, { color: colors.textSecondary }]}>
+            Crafted for students, engineers, and educators exploring the mathematical beauty of numerical analysis.
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.creditsCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+            onPress={() => openUrl(PUBLISHER_URL)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.creditsCardInfo}>
+              <Text style={[styles.creditsRoleBadge, { color: colors.primary }]}>PUBLISHER</Text>
+              <Text style={[styles.creditsEntityName, { color: colors.textPrimary }]}>GL_DVLP</Text>
+              <Text style={[styles.creditsEntityLink, { color: colors.textMuted }]}>
+                play.google.com/store/apps/developer?id=GL_DVLP
+              </Text>
+            </View>
+            <View style={[styles.creditsActionPill, { backgroundColor: colors.primary }]}>
+              <Text style={styles.creditsActionPillText}>Store →</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.creditsCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+            onPress={() => openUrl(CREATOR_URL)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.creditsCardInfo}>
+              <Text style={[styles.creditsRoleBadge, { color: colors.secondary }]}>CREATOR & DEVELOPER</Text>
+              <Text style={[styles.creditsEntityName, { color: colors.textPrimary }]}>MMotsu</Text>
+              <Text style={[styles.creditsEntityLink, { color: colors.textMuted }]}>
+                github.com/NathanJargon
+              </Text>
+            </View>
+            <View style={[styles.creditsActionPill, { backgroundColor: colors.secondary }]}>
+              <Text style={styles.creditsActionPillText}>GitHub →</Text>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
 // Slide-in Left Drawer Menu
 const LeftDrawerModal: React.FC<{
   visible: boolean;
@@ -106,8 +193,18 @@ const LeftDrawerModal: React.FC<{
   onOpenHistory: () => void;
   onNavigateFlashcards: () => void;
   onNavigateSettings: () => void;
-  onNavigateLearn: () => void;
-}> = ({ visible, onClose, onOpenGuide, onOpenHistory, onNavigateFlashcards, onNavigateSettings, onNavigateLearn }) => {
+  onNavigateLearn: (mode: 'textbook' | 'manual') => void;
+  onOpenCredits: () => void;
+}> = ({
+  visible,
+  onClose,
+  onOpenGuide,
+  onOpenHistory,
+  onNavigateFlashcards,
+  onNavigateSettings,
+  onNavigateLearn,
+  onOpenCredits,
+}) => {
   const { colors, isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
   const panelWidth = Math.min(width * 0.78, 320);
@@ -143,6 +240,48 @@ const LeftDrawerModal: React.FC<{
                 style={styles.drawerItem}
                 onPress={() => {
                   onClose();
+                  onNavigateLearn('textbook');
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.drawerItemIconBox, styles.drawerLearnIconBox]}>
+                  <Text style={[styles.drawerItemIcon, styles.drawerLearnIcon]}>§</Text>
+                </View>
+                <View style={styles.drawerItemTextGroup}>
+                  <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
+                    Method Textbook
+                  </Text>
+                  <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
+                    Beauty, derivations & examples
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  onClose();
+                  onNavigateLearn('manual');
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.drawerItemIconBox, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.drawerItemIcon, { color: colors.primary }]}>¶</Text>
+                </View>
+                <View style={styles.drawerItemTextGroup}>
+                  <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
+                    User Manual
+                  </Text>
+                  <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
+                    Syntax, keypad & solver guide
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.drawerItem}
+                onPress={() => {
+                  onClose();
                   onOpenGuide();
                 }}
                 activeOpacity={0.7}
@@ -152,10 +291,10 @@ const LeftDrawerModal: React.FC<{
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
-                    Theory & Guides
+                    Formula Cheat Sheet
                   </Text>
                   <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
-                    Formulas & convergence
+                    Quick equations & convergence
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -227,19 +366,19 @@ const LeftDrawerModal: React.FC<{
                 style={styles.drawerItem}
                 onPress={() => {
                   onClose();
-                  onNavigateLearn();
+                  onOpenCredits();
                 }}
                 activeOpacity={0.7}
               >
-                <View style={[styles.drawerItemIconBox, styles.drawerLearnIconBox]}>
-                  <Text style={[styles.drawerItemIcon, styles.drawerLearnIcon]}>§</Text>
+                <View style={[styles.drawerItemIconBox, { backgroundColor: colors.secondaryLight }]}>
+                  <Text style={[styles.drawerItemIcon, { color: colors.secondary }]}>✦</Text>
                 </View>
                 <View style={styles.drawerItemTextGroup}>
                   <Text style={[styles.drawerItemTitle, { color: colors.textPrimary }]}>
-                    Learn & Tutorials
+                    Credits
                   </Text>
                   <Text style={[styles.drawerItemSub, { color: colors.textMuted }]}>
-                    Methods, examples & guides
+                    GL_DVLP & MMotsu
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -281,6 +420,8 @@ export const RootNavigator: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
+  const [learnMode, setLearnMode] = useState<'textbook' | 'manual'>('textbook');
   const [activeSolver, setActiveSolver] = useState<SolverId | null>('bisection');
   const [solverPrefill, setSolverPrefill] = useState<SolverPrefill | undefined>(undefined);
   const [solverInstanceKey, setSolverInstanceKey] = useState(0);
@@ -325,6 +466,10 @@ export const RootNavigator: React.FC = () => {
         setMenuOpen(false);
         return true;
       }
+      if (creditsOpen) {
+        setCreditsOpen(false);
+        return true;
+      }
       if (guideOpen) {
         setGuideOpen(false);
         return true;
@@ -355,7 +500,7 @@ export const RootNavigator: React.FC = () => {
 
     const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSub.remove();
-  }, [activeSolver, menuOpen, guideOpen, historyOpen, textbookModalChapter]);
+  }, [activeSolver, menuOpen, creditsOpen, guideOpen, historyOpen, textbookModalChapter]);
 
   const handleFinishIntro = async () => {
     try {
@@ -417,6 +562,7 @@ export const RootNavigator: React.FC = () => {
           <SafeAreaView style={[styles.appWrapper, { backgroundColor: colors.background }]}>
             <TutorialScreen
               initialChapterId={textbookModalChapter || activeSolver}
+              initialMode="textbook"
               onClose={() => setTextbookModalChapter(null)}
               onOpenSolver={(methodId, prefill) => {
                 setTextbookModalChapter(null);
@@ -431,6 +577,8 @@ export const RootNavigator: React.FC = () => {
           onClose={() => setHistoryOpen(false)}
           onSelectItem={handleSelectHistoryItem}
         />
+
+        <CreditsModal visible={creditsOpen} onClose={() => setCreditsOpen(false)} />
       </View>
     );
   }
@@ -510,6 +658,7 @@ export const RootNavigator: React.FC = () => {
           >
             {() => (
               <TutorialScreen
+                initialMode={learnMode}
                 onOpenSolver={(methodId, prefill) => {
                   openSolverWithPrefill(methodId, prefill);
                 }}
@@ -535,6 +684,7 @@ export const RootNavigator: React.FC = () => {
           onClose={() => setMenuOpen(false)}
           onOpenGuide={() => setGuideOpen(true)}
           onOpenHistory={() => setHistoryOpen(true)}
+          onOpenCredits={() => setCreditsOpen(true)}
           onNavigateFlashcards={() => {
             setActiveSolver(null);
             if (navigationRef.isReady()) {
@@ -547,7 +697,8 @@ export const RootNavigator: React.FC = () => {
               navigationRef.navigate('Settings');
             }
           }}
-          onNavigateLearn={() => {
+          onNavigateLearn={(mode) => {
+            setLearnMode(mode);
             setActiveSolver(null);
             if (navigationRef.isReady()) {
               navigationRef.navigate('Learn');
@@ -564,6 +715,9 @@ export const RootNavigator: React.FC = () => {
           onClose={() => setHistoryOpen(false)}
           onSelectItem={handleSelectHistoryItem}
         />
+
+        {/* Credits Modal */}
+        <CreditsModal visible={creditsOpen} onClose={() => setCreditsOpen(false)} />
       </View>
     </NavigationContainer>
   );
@@ -708,21 +862,21 @@ const styles = StyleSheet.create({
   },
   drawerDivider: {
     height: 1,
-    marginVertical: 14,
+    marginVertical: 10,
   },
   drawerMenu: {
     flex: 1,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   drawerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 9,
   },
   drawerItemIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -747,27 +901,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   drawerItemTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   drawerItemSub: {
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
   },
   drawerDarkToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: 10,
     marginTop: 'auto',
   },
   darkToggleLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  darkToggleIcon: {
-    fontSize: 18,
-    marginRight: 10,
   },
   darkToggleLabel: {
     fontSize: 14,
@@ -784,5 +934,94 @@ const styles = StyleSheet.create({
   },
   textWhite: {
     color: '#FFFFFF',
+  },
+  creditsOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  creditsDialog: {
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 22,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  creditsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  creditsCategory: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  creditsTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+    marginTop: 2,
+  },
+  creditsCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  creditsCloseText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  creditsDesc: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
+  },
+  creditsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  creditsCardInfo: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  creditsRoleBadge: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  creditsEntityName: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  creditsEntityLink: {
+    fontFamily: 'monospace',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  creditsActionPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+  },
+  creditsActionPillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });
